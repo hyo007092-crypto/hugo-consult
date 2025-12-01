@@ -1,72 +1,39 @@
 <!DOCTYPE html>
-<html lang="ko" translate="no">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="google" content="notranslate">
-    
     <title>Hugo Aesthetic Consult</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
+    <!-- 스타일 & 아이콘 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 리액트 (UI 라이브러리) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
-        body { background-color: #171717; color: white; touch-action: manipulation; margin: 0; }
+        body { background-color: #171717; color: white; touch-action: manipulation; }
         .loader { border: 3px solid #333; border-top: 3px solid #f59e0b; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* 에러 로그 표시용 스타일 */
-        #global-error-display { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #ff5555; z-index: 99999; padding: 20px; box-sizing: border-box; overflow: auto; font-family: monospace; white-space: pre-wrap; }
     </style>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="notranslate">
-    <div id="global-error-display">
-        <h2 style="font-size: 1.5em; margin-bottom: 10px; color: #fff;">⚠️ 오류 발생</h2>
-        <div id="error-content"></div>
-        <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #333; color: white; border: 1px solid #555; border-radius: 5px;">앱 새로고침</button>
-    </div>
+<body>
+    <div id="root"></div>
 
-    <div id="root">
-        <div class="min-h-screen flex items-center justify-center text-neutral-500">
-            <div class="text-center">
-                <div class="loader mx-auto mb-2"></div>
-                <p>앱 로딩중...</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 전역 에러 핸들러 (검은 화면 방지용 최후의 수단)
-        window.onerror = function(msg, url, line, col, error) {
-            // 리액트 내부 노드 삭제 에러는 무시 (번역기 충돌 등)
-            if (msg.includes("removeChild") || msg.includes("insertBefore") || msg.includes("NotFound")) return true;
-
-            const display = document.getElementById('global-error-display');
-            const content = document.getElementById('error-content');
-            if (display && content) {
-                display.style.display = 'block';
-                content.innerText += `[Error] ${msg}\nLine: ${line}\n${error ? error.stack : ''}\n\n`;
-            }
-            return false;
-        };
-    </script>
-
+    <!-- 파이어베이스 연결 설정 (Module) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // =================================================================================
+        // ▼▼▼ 원장님의 파이어베이스 설정이 적용되었습니다 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -75,73 +42,39 @@
             messagingSenderId: "445939856276",
             appId: "1:445939856276:web:a0d00cad2f1ca756d05581"
         };
+        // =================================================================================
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            window.db = db;
-            window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
-        } catch (e) {
-            console.error("Firebase Init Error", e);
-            document.getElementById('error-content').innerText += "Firebase 연결 실패: " + e.message;
-            document.getElementById('global-error-display').style.display = 'block';
-        }
+        // 파이어베이스 실행
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 리액트에서 쓸 수 있게 전역 변수로 등록
+        window.db = db;
+        window.firestore = { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
+    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
-        const { useState, useEffect, useRef, Component } = React;
+        const { useState, useEffect, useRef } = React;
         
-        // 에러 바운더리: 컴포넌트 에러가 전체 앱을 죽이지 않게 함
-        class ErrorBoundary extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-            componentDidCatch(error, errorInfo) {
-                console.error("React Error:", error, errorInfo);
-            }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="min-h-screen flex items-center justify-center p-6 bg-neutral-900 text-white">
-                            <div className="bg-red-900/20 border border-red-500/50 p-6 rounded-lg max-w-md">
-                                <h2 className="text-xl font-bold text-red-500 mb-2">시스템 오류</h2>
-                                <p className="text-sm text-neutral-300 mb-4">앱을 렌더링하는 도중 문제가 발생했습니다.</p>
-                                <pre className="text-xs bg-black p-2 rounded overflow-auto text-red-300 mb-4">{this.state.error?.toString()}</pre>
-                                <button onClick={() => window.location.reload()} className="bg-red-600 px-4 py-2 rounded text-sm font-bold">새로고침</button>
-                            </div>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
-
-        const IconWrapper = ({ name, className, ...props }) => {
-            return <i data-lucide={name} className={className} {...props}></i>;
-        };
-
+        // 아이콘 컴포넌트
         const Icons = {
-            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />,
-            ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
-            Activity: (props) => <IconWrapper name="activity" {...props} />,
-            Layers: (props) => <IconWrapper name="layers" {...props} />,
-            User: (props) => <IconWrapper name="user" {...props} />,
-            Scissors: (props) => <IconWrapper name="scissors" {...props} />,
-            Sparkles: (props) => <IconWrapper name="sparkles" {...props} />,
-            Smile: (props) => <IconWrapper name="smile" {...props} />,
-            Syringe: (props) => <IconWrapper name="syringe" {...props} />,
-            Settings: (props) => <IconWrapper name="settings" {...props} />,
-            X: (props) => <IconWrapper name="x" {...props} />,
-            Plus: (props) => <IconWrapper name="plus" {...props} />,
-            Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
-            Edit2: (props) => <IconWrapper name="edit-2" {...props} />,
-            Monitor: (props) => <IconWrapper name="monitor" {...props} />,
-            Upload: (props) => <IconWrapper name="upload" {...props} />,
-            Check: (props) => <IconWrapper name="check" {...props} />
+            ScanFace: (props) => <i data-lucide="scan-face" {...props}></i>,
+            ArrowLeft: (props) => <i data-lucide="arrow-left" {...props}></i>,
+            Activity: (props) => <i data-lucide="activity" {...props}></i>,
+            Layers: (props) => <i data-lucide="layers" {...props}></i>,
+            User: (props) => <i data-lucide="user" {...props}></i>,
+            Scissors: (props) => <i data-lucide="scissors" {...props}></i>,
+            Sparkles: (props) => <i data-lucide="sparkles" {...props}></i>,
+            Smile: (props) => <i data-lucide="smile" {...props}></i>,
+            Syringe: (props) => <i data-lucide="syringe" {...props}></i>,
+            Settings: (props) => <i data-lucide="settings" {...props}></i>,
+            X: (props) => <i data-lucide="x" {...props}></i>,
+            Plus: (props) => <i data-lucide="plus" {...props}></i>,
+            Trash2: (props) => <i data-lucide="trash-2" {...props}></i>,
+            Monitor: (props) => <i data-lucide="monitor" {...props}></i>,
+            Upload: (props) => <i data-lucide="upload" {...props}></i>,
+            Check: (props) => <i data-lucide="check" {...props}></i>
         };
 
         const CATEGORIES = [
@@ -157,6 +90,7 @@
             { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
+        // 이미지 압축 함수 (용량 줄이기)
         const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -166,13 +100,13 @@
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; 
+                        const MAX_WIDTH = 800; // 최대 너비
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                        resolve(canvas.toDataURL('image/jpeg', 0.6)); // 압축률 60%
                     };
                 };
             });
@@ -226,10 +160,19 @@
             };
             return (
                 <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-lg bg-black" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>}
+                    {afterImage ? (
+                        <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>
+                    )}
                     <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded">After</div>
+                    
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? (
+                            <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>
+                        )}
                         <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-lg z-30" style={{ left: `${sliderPosition}%` }}>
@@ -239,63 +182,35 @@
             );
         };
 
-        // FileInput 컴포넌트 (검은화면 주원인이었던 Props 전달 문제 해결)
-        const FileInput = ({ label, bindKeyBefore, bindKeyAfter, data, onFileChange }) => (
-            <div className="space-y-1">
-                <p className="text-xs text-neutral-400 ml-1">{label}</p>
-                <div className="grid grid-cols-2 gap-2">
-                    <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data && data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                        {data && data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
-                        <input type="file" hidden accept="image/*" onChange={e=>onFileChange(e, bindKeyBefore)}/>
-                    </label>
-                    <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data && data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                        {data && data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
-                        <input type="file" hidden accept="image/*" onChange={e=>onFileChange(e, bindKeyAfter)}/>
-                    </label>
-                </div>
-            </div>
-        );
-
-        const CaseModal = ({ onClose, categories, initialData }) => {
+        // 업로드 모달 (관리자용) - 3구도(정면, 45도, 측면) 추가됨
+        const UploadModal = ({ onClose, categories }) => {
             const [uploading, setUploading] = useState(false);
-            const [data, setData] = useState({ categoryId: categories[0]?.id, patientId: '', desc: '', tags: '', frontBefore: null, frontAfter: null, angleBefore: null, angleAfter: null, sideBefore: null, sideAfter: null });
-
-            useEffect(() => {
-                if (initialData) {
-                    setData({
-                        categoryId: initialData.categoryId || categories[0]?.id,
-                        patientId: initialData.patientId || '',
-                        desc: initialData.description || '',
-                        tags: initialData.tags ? initialData.tags.join(', ') : '',
-                        frontBefore: initialData.images?.front?.before || null,
-                        frontAfter: initialData.images?.front?.after || null,
-                        angleBefore: initialData.images?.angle45?.before || null,
-                        angleAfter: initialData.images?.angle45?.after || null,
-                        sideBefore: initialData.images?.side?.before || null,
-                        sideAfter: initialData.images?.side?.after || null,
-                    });
-                }
-            }, [initialData]);
+            const [data, setData] = useState({ 
+                categoryId: categories[0].id, 
+                patientId: '', 
+                desc: '', 
+                tags: '', 
+                frontBefore: null, frontAfter: null,
+                angleBefore: null, angleAfter: null,
+                sideBefore: null, sideAfter: null
+            });
             
             const handleFile = async (e, key) => {
                 if(e.target.files[0]) {
-                    try {
-                        const compressed = await compressImage(e.target.files[0]);
-                        setData(prev => ({...prev, [key]: compressed}));
-                    } catch(err) {
-                        alert("이미지 처리 중 오류가 발생했습니다.");
-                    }
+                    const compressed = await compressImage(e.target.files[0]);
+                    setData({...data, [key]: compressed});
                 }
             };
 
             const handleSave = async () => {
-                if(!window.db || !window.firestore) return alert("데이터베이스 연결 실패.");
-                if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
+                if(!window.db) return alert("파이어베이스 연결 실패. 설정을 확인하세요.");
+                if(!data.patientId || !data.desc) return alert("필수 정보(환자ID, 수술내용)를 입력해주세요.");
+                if(!data.frontBefore && !data.frontAfter) return alert("최소한 정면(Front) 사진은 있어야 합니다.");
                 
                 setUploading(true);
                 try {
-                    const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
-                    const docData = {
+                    const { collection, addDoc, serverTimestamp } = window.firestore;
+                    await addDoc(collection(window.db, "cases"), {
                         categoryId: data.categoryId,
                         patientId: data.patientId,
                         description: data.desc,
@@ -304,56 +219,74 @@
                             front: { before: data.frontBefore, after: data.frontAfter },
                             angle45: { before: data.angleBefore, after: data.angleAfter },
                             side: { before: data.sideBefore, after: data.sideAfter }
-                        }
-                    };
-
-                    if (initialData) {
-                        await updateDoc(doc(window.db, "cases", initialData.id), docData);
-                        alert("수정 완료!");
-                    } else {
-                        docData.createdAt = serverTimestamp();
-                        await addDoc(collection(window.db, "cases"), docData);
-                        alert("업로드 완료!");
-                    }
+                        },
+                        createdAt: serverTimestamp()
+                    });
+                    alert("업로드 완료!");
                     onClose();
                 } catch(e) {
                     console.error(e);
-                    alert("오류 발생: " + e.message);
+                    alert("업로드 실패: " + e.message);
                 } finally {
                     setUploading(false);
                 }
             };
 
+            const FileInput = ({ label, bindKeyBefore, bindKeyAfter }) => (
+                <div className="space-y-1">
+                    <p className="text-xs text-neutral-400 ml-1">{label}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                        <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
+                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
+                        </label>
+                        <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
+                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
+                        </label>
+                    </div>
+                </div>
+            );
+
             return (
                 <div className="fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center">
                     <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-neutral-700 pb-3">
-                            <h3 className="text-lg font-medium text-white">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
-                            <button onClick={onClose}><Icons.X size={20}/></button>
+                            <h3 className="text-lg font-medium text-white">새 케이스 등록</h3>
+                            <button onClick={onClose}><Icons.X/></button>
                         </div>
+                        
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-neutral-500 block mb-1">카테고리</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" value={data.categoryId} onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                <label className="text-xs text-neutral-500 block mb-1">카테고리 분류</label>
+                                <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:border-amber-500 outline-none" onChange={e=>setData({...data, categoryId: e.target.value})}>
                                     {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs text-neutral-500 block mb-1">환자 ID</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="예: 240101-A" value={data.patientId} onChange={e=>setData({...data, patientId: e.target.value})}/>
+                                <label className="text-xs text-neutral-500 block mb-1">환자 ID (차트번호)</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:border-amber-500 outline-none" placeholder="예: 240101-A" onChange={e=>setData({...data, patientId: e.target.value})}/>
                             </div>
                         </div>
-                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="수술 내용" value={data.desc} onChange={e=>setData({...data, desc: e.target.value})}/>
-                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
-                        
-                        <div className="space-y-3 pt-2 border-t border-neutral-700">
-                            {/* 여기서 data와 onFileChange를 꼭 전달해야 에러가 안 납니다 */}
-                            <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" data={data} onFileChange={handleFile} />
-                            <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" data={data} onFileChange={handleFile} />
-                            <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" data={data} onFileChange={handleFile} />
+
+                        <div>
+                            <label className="text-xs text-neutral-500 block mb-1">수술 내용 (제목)</label>
+                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:border-amber-500 outline-none" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" onChange={e=>setData({...data, desc: e.target.value})}/>
                         </div>
-                        <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
-                            {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
+
+                        <div>
+                            <label className="text-xs text-neutral-500 block mb-1">태그 (쉼표로 구분)</label>
+                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white focus:border-amber-500 outline-none" placeholder="예: 재수술, 20대, 자연스러움" onChange={e=>setData({...data, tags: e.target.value})}/>
+                        </div>
+
+                        <div className="space-y-3 pt-2 border-t border-neutral-700">
+                            <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                            <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                            <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                        </div>
+
+                        <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center transition-colors mt-4">
+                            {uploading ? <div className="loader"/> : "저장 및 업로드"}
                         </button>
                     </div>
                 </div>
@@ -367,33 +300,27 @@
             const [selectedCategory, setSelectedCategory] = useState(null);
             const [selectedTag, setSelectedTag] = useState('전체');
             const [selectedCase, setSelectedCase] = useState(null);
-            const [caseViewType, setCaseViewType] = useState('front');
-            const [modalOpen, setModalOpen] = useState(false);
-            const [editingCase, setEditingCase] = useState(null);
+            const [caseViewType, setCaseViewType] = useState('front'); // front, angle45, side
+            const [showUpload, setShowUpload] = useState(false);
 
             useEffect(() => {
-                // 아이콘 라이브러리 로드 안전장치
-                if(window.lucide && window.lucide.createIcons) {
-                    window.lucide.createIcons();
-                }
+                if(window.lucide) window.lucide.createIcons();
             });
 
+            // 데이터 실시간 동기화
             useEffect(() => {
                 if(window.db && window.firestore) {
                     const { collection, onSnapshot, query, orderBy } = window.firestore;
-                    try {
-                        const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
-                        const unsub = onSnapshot(q, (snapshot) => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            setCases(list);
-                        }, (err) => console.log("DB Error", err));
-                        return () => unsub();
-                    } catch(e) {
-                        console.log("Firestore Query Error", e);
-                    }
+                    const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
+                    const unsub = onSnapshot(q, (snapshot) => {
+                        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setCases(list);
+                    }, (err) => console.log("DB 접속 대기중 (규칙 확인 필요)", err));
+                    return () => unsub();
                 }
             }, [view]);
 
+            // 삭제 기능
             const handleDelete = async (e, id) => {
                 e.stopPropagation();
                 if(confirm("정말 삭제하시겠습니까?")) {
@@ -402,15 +329,9 @@
                 }
             };
 
-            const handleEdit = (e, item) => {
-                e.stopPropagation();
-                setEditingCase(item);
-                setModalOpen(true);
-            };
-
-            const CategoryIcon = ({ name }) => {
-                const IconComponent = Icons[name];
-                return IconComponent ? <IconComponent className="w-5 h-5" /> : null;
+            const CategoryIcon = ({ name, rotate }) => {
+                const IconComponent = Icons[name] || Icons.Sparkles;
+                return <IconComponent size={20} className={rotate ? `rotate-${rotate}` : ''} />;
             };
 
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
@@ -420,25 +341,20 @@
             return (
                 <div className="bg-neutral-900 min-h-screen text-neutral-100 font-sans selection:bg-amber-500/30">
                     <header className="fixed top-0 w-full z-40 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800 h-14 flex items-center justify-between px-4">
-                        {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')}><IconWrapper name="arrow-left" className="w-5 h-5 text-white" /></button> : <div className="w-5"/>}
+                        {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')}><Icons.ArrowLeft size={20}/></button> : <div className="w-5"/>}
                         <h2 className="font-serif text-lg text-amber-500/90 tracking-widest">{view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}</h2>
-                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setModalOpen(true);}} className="text-amber-500"><IconWrapper name="plus" className="w-6 h-6" /></button> : <div className="w-5"/>}
+                        {isAdmin ? <button onClick={()=>setShowUpload(true)} className="text-amber-500"><Icons.Plus size={24}/></button> : <div className="w-5"/>}
                     </header>
 
                     <main className="pt-16 pb-6 px-4 max-w-3xl mx-auto min-h-screen">
                         {view === 'DASHBOARD' && (
                             <div className="animate-fade-in">
-                                {isAdmin && <div className="mb-4 bg-amber-900/20 border border-amber-500/30 p-2 rounded text-xs text-amber-500 flex gap-2"><IconWrapper name="monitor" className="w-3 h-3" /> 관리자 모드</div>}
+                                {isAdmin && <div className="mb-4 bg-amber-900/20 border border-amber-500/30 p-2 rounded text-xs text-amber-500 flex gap-2"><Icons.Monitor size={14}/> 관리자 모드 (우측 상단 + 눌러서 추가)</div>}
                                 <div className="mb-6 text-center pt-2"><h3 className="text-xl font-light text-neutral-300">상담하실 <span className="text-amber-500 font-serif italic pr-1">Category</span>를 선택하세요</h3></div>
                                 <div className="grid grid-cols-2 gap-3">
                                     {CATEGORIES.map((cat) => (
                                         <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} className="bg-neutral-800 border border-neutral-700/50 hover:border-amber-500/50 rounded-lg p-5 flex flex-col items-center gap-3 aspect-[1.1/1]">
-                                            <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-amber-500">
-                                                {/* 아이콘 렌더링 방식 수정 */}
-                                                <div className={cat.rotateIcon ? `rotate-${cat.rotateIcon}` : ''}>
-                                                    <CategoryIcon name={cat.icon} />
-                                                </div>
-                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-amber-500"><CategoryIcon name={cat.icon} rotate={cat.rotateIcon}/></div>
                                             <span className="text-sm font-medium text-neutral-300">{cat.name}</span>
                                         </button>
                                     ))}
@@ -452,43 +368,47 @@
                                     {selectedCategory.tags.map(tag => <button key={tag} onClick={() => setSelectedTag(tag)} className={`px-4 py-1.5 rounded-full text-xs border ${selectedTag === tag ? 'bg-amber-500 border-amber-500 text-neutral-900' : 'border-neutral-700 text-neutral-400'}`}>#{tag}</button>)}
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {filteredCases.length > 0 ? filteredCases.map(item => (
+                                    {filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700/50 aspect-[4/5] cursor-pointer group">
-                                            <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover opacity-90 group-hover:opacity-100" />
+                                            <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover opacity-90 group-hover:opacity-100" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/90 via-transparent to-transparent opacity-60" />
                                             <div className="absolute bottom-2 left-3 right-3">
                                                 <p className="text-[10px] text-amber-500 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
                                                 <p className="text-xs text-neutral-200 line-clamp-1">{item.description}</p>
                                             </div>
-                                            {isAdmin && (
-                                                <div className="absolute top-2 right-2 flex gap-1">
-                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-neutral-800/80 p-1.5 rounded text-white hover:bg-neutral-700"><IconWrapper name="edit-2" className="w-3 h-3" /></button>
-                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-red-500/80 p-1.5 rounded text-white hover:bg-red-600"><IconWrapper name="trash-2" className="w-3 h-3" /></button>
-                                                </div>
-                                            )}
+                                            {isAdmin && <button onClick={(e)=>handleDelete(e, item.id)} className="absolute top-2 right-2 bg-red-500 p-1 rounded text-white"><Icons.Trash2 size={12}/></button>}
                                         </div>
-                                    )) : (
-                                        <div className="col-span-2 text-center py-20 text-neutral-500">
-                                            <p>데이터가 없습니다.</p>
-                                            {isAdmin && <p className="text-xs mt-2">+ 버튼을 눌러 추가하세요</p>}
-                                        </div>
-                                    )}
+                                    ))}
+                                    {filteredCases.length === 0 && <div className="col-span-2 text-center py-20 text-neutral-500">데이터가 없습니다.<br/>{isAdmin && "+ 버튼을 눌러 추가하세요"}</div>}
                                 </div>
                             </div>
                         )}
 
                         {view === 'DETAIL' && selectedCase && (
                             <div className="animate-fade-in flex flex-col h-[calc(100vh-80px)]">
+                                {/* 뷰 타입 선택 탭 */}
                                 <div className="flex bg-neutral-800 p-1 rounded-lg mb-4 shrink-0 mx-auto w-full max-w-sm">
                                     {['front', 'angle45', 'side'].map((v) => (
-                                        <button key={v} onClick={() => setCaseViewType(v)} className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${caseViewType === v ? 'bg-neutral-700 text-amber-500 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
+                                        <button
+                                            key={v}
+                                            onClick={() => setCaseViewType(v)}
+                                            className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                                                caseViewType === v 
+                                                ? 'bg-neutral-700 text-amber-500 shadow-sm' 
+                                                : 'text-neutral-500 hover:text-neutral-300'
+                                            }`}
+                                        >
                                             {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
                                         </button>
                                     ))}
                                 </div>
+
                                 <div className="flex-1 flex flex-col justify-center min-h-0">
                                     <div className="w-full relative rounded-xl border border-neutral-700 overflow-hidden shadow-2xl bg-black">
-                                        <CompareSlider beforeImage={selectedCase.images?.[caseViewType]?.before} afterImage={selectedCase.images?.[caseViewType]?.after} />
+                                        <CompareSlider 
+                                            beforeImage={selectedCase.images[caseViewType]?.before} 
+                                            afterImage={selectedCase.images[caseViewType]?.after} 
+                                        />
                                     </div>
                                     <div className="mt-6 space-y-2">
                                         <div className="flex items-center justify-between"><span className="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-[10px] rounded border border-neutral-700">ID: {selectedCase.patientId}</span></div>
@@ -499,18 +419,13 @@
                         )}
                     </main>
 
-                    {modalOpen && <CaseModal categories={CATEGORIES} onClose={()=>{setModalOpen(false); setEditingCase(null);}} initialData={editingCase} />}
+                    {showUpload && <UploadModal categories={CATEGORIES} onClose={()=>setShowUpload(false)} />}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        // ErrorBoundary로 감싸서 치명적 에러 발생 시 검은 화면 대신 에러 메시지 출력
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
-        );
+        root.render(<App />);
     </script>
 </body>
 </html>
