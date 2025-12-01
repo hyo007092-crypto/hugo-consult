@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 번역 방지 태그 (가장 중요) -->
+    <!-- 번역기 차단 (가장 중요: 검은 화면 방지) -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Hugo Consult">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
 
@@ -22,8 +21,6 @@
         body { background-color: #171717; color: white; touch-action: manipulation; }
         .loader { border: 3px solid #333; border-top: 3px solid #f59e0b; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* 에러 로그 숨기기 (번역기 충돌 시 사용자에게 안 보이게) */
-        #error-log { display: none; }
     </style>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +43,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 파이어베이스 설정 ▼▼▼
+        // ▼▼▼ 파이어베이스 설정 (원장님 전용 키 적용됨) ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -175,10 +172,18 @@
             };
             return (
                 <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-lg bg-black" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>}
+                    {afterImage ? (
+                        <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>
+                    )}
                     <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded">After</div>
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? (
+                            <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>
+                        )}
                         <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-lg z-30" style={{ left: `${sliderPosition}%` }}>
@@ -190,7 +195,13 @@
 
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
-            const [data, setData] = useState({ categoryId: categories[0].id, patientId: '', desc: '', tags: '', frontBefore: null, frontAfter: null, angleBefore: null, angleAfter: null, sideBefore: null, sideAfter: null });
+            const [data, setData] = useState({ 
+                categoryId: categories[0].id, 
+                patientId: '', desc: '', tags: '', 
+                frontBefore: null, frontAfter: null, 
+                angleBefore: null, angleAfter: null, 
+                sideBefore: null, sideAfter: null 
+            });
 
             useEffect(() => {
                 if (initialData) {
