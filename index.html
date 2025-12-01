@@ -32,7 +32,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // updateDoc 추가됨
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ▼▼▼ 파이어베이스 설정 (유지) ▼▼▼
@@ -49,7 +48,6 @@
         const db = getFirestore(app);
 
         window.db = db;
-        // updateDoc 추가
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
@@ -74,10 +72,11 @@
             X: (props) => <IconWrapper name="x" {...props} />,
             Plus: (props) => <IconWrapper name="plus" {...props} />,
             Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
-            Edit2: (props) => <IconWrapper name="edit-2" {...props} />, // 수정 아이콘 추가
+            Edit2: (props) => <IconWrapper name="edit-2" {...props} />, 
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
-            Check: (props) => <IconWrapper name="check" {...props} />
+            Check: (props) => <IconWrapper name="check" {...props} />,
+            EyeOff: (props) => <IconWrapper name="eye-off" {...props} /> // 블러 아이콘
         };
 
         const CATEGORIES = [
@@ -93,7 +92,8 @@
             { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
-        const compressImage = (file) => {
+        // 이미지 압축 및 블러 처리 함수
+        const processImage = (file, blurPoints = []) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -108,7 +108,44 @@
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6)); 
+
+                        // 블러 처리 (단순 모자이크 효과)
+                        if (blurPoints.length > 0) {
+                            blurPoints.forEach(point => {
+                                const x = point.x * canvas.width;
+                                const y = point.y * canvas.height;
+                                const radius = 40; // 블러 반지름
+
+                                // 원형 클리핑 후 블러 효과 흉내 (픽셀화)
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                ctx.clip();
+                                
+                                // 모자이크 처리
+                                const sampleSize = 10;
+                                for (let bx = x - radius; bx < x + radius; bx += sampleSize) {
+                                    for (let by = y - radius; by < y + radius; by += sampleSize) {
+                                        // 원 안에 있는지 확인 (대략적)
+                                        if (Math.sqrt((bx - x)**2 + (by - y)**2) < radius) {
+                                            const pixelData = ctx.getImageData(bx, by, 1, 1).data;
+                                            ctx.fillStyle = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+                                            ctx.fillRect(bx, by, sampleSize, sampleSize);
+                                        }
+                                    }
+                                }
+                                ctx.restore();
+                                
+                                // 테두리 부드럽게 (옵션)
+                                ctx.beginPath();
+                                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                ctx.lineWidth = 2;
+                                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                                ctx.stroke();
+                            });
+                        }
+
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
                     };
                 };
             });
@@ -183,7 +220,66 @@
             );
         };
 
-        // 업로드 및 수정 모달 (통합)
+        // 이미지 편집 컴포넌트 (블러 추가용)
+        const ImageEditor = ({ imageSrc, onSave, onCancel }) => {
+            const [blurPoints, setBlurPoints] = useState([]);
+            const imgRef = useRef(null);
+
+            const handleImageClick = (e) => {
+                if (!imgRef.current) return;
+                const rect = imgRef.current.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = (e.clientY - rect.top) / rect.height;
+                setBlurPoints([...blurPoints, { x, y }]);
+            };
+
+            const handleUndo = () => {
+                setBlurPoints(blurPoints.slice(0, -1));
+            };
+
+            const handleProcess = async () => {
+                // 원본 이미지를 불러와서 캔버스에 그리고 블러 처리 후 저장
+                // 여기서는 간단히 좌표만 넘겨서 processImage 함수에서 처리하도록 함
+                // 실제 구현에서는 이미지 로드 -> 캔버스 -> 블러 -> 데이터 URL 변환 과정을 거침
+                // 편의상 현재 미리보기 이미지를 그대로 사용하여 처리한다고 가정 (실제로는 File 객체가 필요할 수 있음)
+                // 하지만 여기선 UI 흐름만 보여주고 실제 처리는 상위에서 하도록 간소화
+                
+                // 임시: 여기선 좌표만 상위로 전달하여 처리한다고 가정
+                onSave(blurPoints);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center">
+                    <div className="relative max-w-full max-h-[80vh]">
+                        <img 
+                            ref={imgRef}
+                            src={imageSrc} 
+                            className="max-w-full max-h-[80vh] object-contain"
+                            onClick={handleImageClick}
+                        />
+                        {blurPoints.map((p, i) => (
+                            <div 
+                                key={i}
+                                className="absolute w-10 h-10 bg-white/30 backdrop-blur-md rounded-full border border-white/50 pointer-events-none"
+                                style={{ 
+                                    left: `${p.x * 100}%`, 
+                                    top: `${p.y * 100}%`, 
+                                    transform: 'translate(-50%, -50%)' 
+                                }}
+                            />
+                        ))}
+                    </div>
+                    <div className="mt-4 flex gap-4 text-white">
+                        <button onClick={onCancel} className="px-4 py-2 bg-neutral-700 rounded">취소</button>
+                        <button onClick={handleUndo} className="px-4 py-2 bg-neutral-600 rounded">되돌리기</button>
+                        <button onClick={handleProcess} className="px-4 py-2 bg-amber-600 rounded">적용하기</button>
+                    </div>
+                    <p className="text-neutral-400 text-sm mt-2">가리고 싶은 부위를 터치하세요</p>
+                </div>
+            );
+        };
+
+        // 업로드 및 수정 모달 (블러 기능 통합)
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ 
@@ -193,8 +289,10 @@
                 angleBefore: null, angleAfter: null, 
                 sideBefore: null, sideAfter: null 
             });
+            
+            // 블러 처리를 위한 상태
+            const [editingImage, setEditingImage] = useState(null); // { key: 'frontBefore', file: File, preview: string }
 
-            // 수정 모드일 경우 초기 데이터 세팅
             useEffect(() => {
                 if (initialData) {
                     setData({
@@ -212,11 +310,25 @@
                 }
             }, [initialData]);
             
-            const handleFile = async (e, key) => {
-                if(e.target.files[0]) {
-                    const compressed = await compressImage(e.target.files[0]);
-                    setData(prev => ({...prev, [key]: compressed}));
+            const handleFileSelect = (e, key) => {
+                if (e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        // 바로 저장하지 않고 편집 모드로 진입
+                        setEditingImage({ key, file, preview: e.target.result });
+                    };
+                    reader.readAsDataURL(file);
                 }
+            };
+
+            const handleBlurSave = async (blurPoints) => {
+                if (!editingImage) return;
+                
+                // 블러 포인트가 있으면 처리, 없으면 원본 압축
+                const processedImage = await processImage(editingImage.file, blurPoints);
+                setData(prev => ({ ...prev, [editingImage.key]: processedImage }));
+                setEditingImage(null);
             };
 
             const handleSave = async () => {
@@ -239,11 +351,9 @@
                     };
 
                     if (initialData) {
-                        // 수정 모드
                         await updateDoc(doc(window.db, "cases", initialData.id), docData);
                         alert("수정 완료!");
                     } else {
-                        // 생성 모드
                         docData.createdAt = serverTimestamp();
                         await addDoc(collection(window.db, "cases"), docData);
                         alert("업로드 완료!");
@@ -262,48 +372,63 @@
                     <p className="text-xs text-neutral-400 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-2">
                         <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
+                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before (터치)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyBefore)}/>
                         </label>
                         <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
+                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After (터치)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyAfter)}/>
                         </label>
                     </div>
                 </div>
             );
 
             return (
-                <div className="fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center">
-                    <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center border-b border-neutral-700 pb-3">
-                            <h3 className="text-lg font-medium text-white">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
-                            <button onClick={onClose}><Icons.X size={20}/></button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-neutral-500 block mb-1">카테고리</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" value={data.categoryId} onChange={e=>setData({...data, categoryId: e.target.value})}>
-                                    {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                <>
+                    {editingImage && (
+                        <ImageEditor 
+                            imageSrc={editingImage.preview} 
+                            onSave={handleBlurSave} 
+                            onCancel={() => setEditingImage(null)} 
+                        />
+                    )}
+                    
+                    <div className={`fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center ${editingImage ? 'hidden' : ''}`}>
+                        <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center border-b border-neutral-700 pb-3">
+                                <h3 className="text-lg font-medium text-white">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
+                                <button onClick={onClose}><Icons.X size={20}/></button>
                             </div>
-                            <div>
-                                <label className="text-xs text-neutral-500 block mb-1">환자 ID</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="예: 240101-A" value={data.patientId} onChange={e=>setData({...data, patientId: e.target.value})}/>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-neutral-500 block mb-1">카테고리</label>
+                                    <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" value={data.categoryId} onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                        {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-neutral-500 block mb-1">환자 ID</label>
+                                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="예: 240101-A" value={data.patientId} onChange={e=>setData({...data, patientId: e.target.value})}/>
+                                </div>
                             </div>
+                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="수술 내용" value={data.desc} onChange={e=>setData({...data, desc: e.target.value})}/>
+                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
+                            
+                            <div className="bg-neutral-900/50 p-2 rounded text-xs text-neutral-400 mb-2">
+                                * 사진 선택 후, 가리고 싶은 부위를 터치하면 블러 처리됩니다.
+                            </div>
+
+                            <div className="space-y-3 pt-2 border-t border-neutral-700">
+                                <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                                <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                                <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                            </div>
+                            <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
+                                {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
+                            </button>
                         </div>
-                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="수술 내용" value={data.desc} onChange={e=>setData({...data, desc: e.target.value})}/>
-                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
-                        <div className="space-y-3 pt-2 border-t border-neutral-700">
-                            <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                            <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                            <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
-                        </div>
-                        <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
-                            {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
-                        </button>
                     </div>
-                </div>
+                </>
             );
         };
 
