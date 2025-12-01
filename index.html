@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hugo Aesthetic Consult</title>
+    
+    <!-- 아이콘 및 스타일 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 리액트 및 바벨 (브라우저 실행용) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* 커스텀 스크롤바 숨기기 및 애니메이션 */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+        body { background-color: #171717; color: white; touch-action: manipulation; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // --- 아이콘 설정 (Lucide) ---
+        const Icons = {
+            ScanFace: ({size, className}) => <i data-lucide="scan-face" className={className} style={{width: size, height: size}}></i>,
+            ArrowLeft: ({size, className}) => <i data-lucide="arrow-left" className={className} style={{width: size, height: size}}></i>,
+            Activity: ({size, className}) => <i data-lucide="activity" className={className} style={{width: size, height: size}}></i>,
+            Layers: ({size, className}) => <i data-lucide="layers" className={className} style={{width: size, height: size}}></i>,
+            User: ({size, className}) => <i data-lucide="user" className={className} style={{width: size, height: size}}></i>,
+            Scissors: ({size, className}) => <i data-lucide="scissors" className={className} style={{width: size, height: size}}></i>,
+            Sparkles: ({size, className}) => <i data-lucide="sparkles" className={className} style={{width: size, height: size}}></i>,
+            Smile: ({size, className}) => <i data-lucide="smile" className={className} style={{width: size, height: size}}></i>,
+            Syringe: ({size, className}) => <i data-lucide="syringe" className={className} style={{width: size, height: size}}></i>,
+            Settings: ({size, className}) => <i data-lucide="settings" className={className} style={{width: size, height: size}}></i>,
+            X: ({size, className}) => <i data-lucide="x" className={className} style={{width: size, height: size}}></i>,
+            Plus: ({size, className}) => <i data-lucide="plus" className={className} style={{width: size, height: size}}></i>,
+            Trash2: ({size, className}) => <i data-lucide="trash-2" className={className} style={{width: size, height: size}}></i>,
+            Monitor: ({size, className}) => <i data-lucide="monitor" className={className} style={{width: size, height: size}}></i>,
+            Upload: ({size, className}) => <i data-lucide="upload" className={className} style={{width: size, height: size}}></i>,
+            Check: ({size, className}) => <i data-lucide="check" className={className} style={{width: size, height: size}}></i>,
+            RefreshCw: ({size, className}) => <i data-lucide="refresh-cw" className={className} style={{width: size, height: size}}></i>,
+            Menu: ({size, className}) => <i data-lucide="menu" className={className} style={{width: size, height: size}}></i>
+        };
+
+        // --- 초기 데이터 ---
+        const CATEGORIES = [
+            { id: 'lifting_face', name: '안면목거상', icon: 'ScanFace', tags: ['전체', '미니거상', '목거상', '재수술'] },
+            { id: 'lifting_forehead', name: '이마거상', icon: 'ArrowLeft', rotateIcon: 90, tags: ['전체', '내시경', '축소병행'] },
+            { id: 'eyes_middle', name: '중년눈성형', icon: 'Activity', tags: ['전체', '상안검', '하안검', '눈밑지방재배치'] },
+            { id: 'thread', name: '실리프팅', icon: 'Layers', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
+            { id: 'ears', name: '귀성형', icon: 'User', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
+            { id: 'nose', name: '코성형', icon: 'User', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
+            { id: 'lipo', name: '지방흡입', icon: 'Scissors', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
+            { id: 'fat_graft', name: '지방이식', icon: 'Sparkles', tags: ['전체', '풀페이스', '이마', '앞광대'] },
+            { id: 'philtrum', name: '인중축소(C컬)', icon: 'Smile', tags: ['전체', '내측', '외측', '입꼬리'] },
+            { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
+        ];
+
+        const DEMO_CASES = [
+            {
+                id: 1, categoryId: 'lipo', tags: ['팔'], patientId: 'DEMO-01', description: '팔 전체 360도 지방흡입 (예시)',
+                images: { front: { before: 'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb?w=600', after: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600' } }
+            }
+        ];
+
+        // --- 컴포넌트: 로그인 ---
+        const LoginScreen = ({ onLogin }) => {
+            const [pin, setPin] = useState('');
+            const [error, setError] = useState(false);
+
+            const handleNumClick = (num) => {
+                if (pin.length < 4) {
+                    const newPin = pin + num;
+                    setPin(newPin);
+                    if (newPin.length === 4) {
+                        if (newPin === '0000') setTimeout(() => onLogin(false), 300);
+                        else if (newPin === '9999') setTimeout(() => onLogin(true), 300);
+                        else {
+                            setError(true);
+                            setTimeout(() => { setPin(''); setError(false); }, 1000);
+                        }
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
+                    <div className="absolute top-[-20%] right-[-20%] w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
+                        <div className="text-center space-y-2">
+                            <h1 className="text-3xl font-serif tracking-widest text-amber-500/90">HUGO</h1>
+                            <p className="text-xs tracking-[0.3em] text-neutral-400 uppercase">Plastic Surgery</p>
+                        </div>
+                        <div className="flex space-x-4 mb-4">
+                            {[0, 1, 2, 3].map((i) => (
+                                <div key={i} className={`w-4 h-4 rounded-full border border-neutral-600 transition-all duration-300 ${pin.length > i ? 'bg-amber-500 border-amber-500' : 'bg-transparent'}`} />
+                            ))}
+                        </div>
+                        {error && <p className="text-red-400 text-sm animate-pulse absolute top-1/2 mt-[-60px]">PIN 번호가 올바르지 않습니다</p>}
+                        <div className="grid grid-cols-3 gap-6 w-full px-4">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                                <button key={num} onClick={() => handleNumClick(num.toString())} className="w-16 h-16 rounded-full border border-neutral-700 bg-neutral-800/50 text-2xl font-light hover:bg-neutral-700 active:scale-95 transition-all flex items-center justify-center mx-auto">{num}</button>
+                            ))}
+                            <div className="flex justify-center items-center"><button onClick={() => setPin('')} className="text-sm text-neutral-500 hover:text-white">전체취소</button></div>
+                            <button onClick={() => handleNumClick('0')} className="w-16 h-16 rounded-full border border-neutral-700 bg-neutral-800/50 text-2xl font-light hover:bg-neutral-700 active:scale-95 transition-all flex items-center justify-center mx-auto">0</button>
+                            <div className="flex justify-center items-center"><button onClick={() => setPin(pin.slice(0, -1))} className="w-16 h-16 flex items-center justify-center text-neutral-400 hover:text-white"><Icons.ArrowLeft size={24} /></button></div>
+                        </div>
+                        <div className="mt-8 text-neutral-600 text-xs text-center">
+                            <p className="mb-1">뷰어: 0000 / 관리자: 9999</p>
+                            <p className="opacity-50 text-[10px]">Demo Mode (No Cloud)</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 컴포넌트: 슬라이더 ---
+        const CompareSlider = ({ beforeImage, afterImage }) => {
+            const [sliderPosition, setSliderPosition] = useState(50);
+            const containerRef = useRef(null);
+
+            const handleMove = (event) => {
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+                    const x = clientX - rect.left;
+                    const position = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    setSliderPosition(position);
+                }
+            };
+
+            return (
+                <div ref={containerRef} className="relative w-full aspect-[4/5] md:aspect-video overflow-hidden rounded-lg select-none cursor-ew-resize group bg-black" 
+                     onMouseMove={handleMove} onTouchMove={handleMove}>
+                    {afterImage ? <img src={afterImage} className="absolute top-0 left-0 w-full h-full object-contain select-none" draggable="false" /> : null}
+                    <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-10">After</div>
+                    
+                    <div className="absolute top-0 left-0 h-full w-full overflow-hidden" style={{ width: `${sliderPosition}%` }}>
+                        {beforeImage ? <img src={beforeImage} className="absolute top-0 left-0 max-w-none h-full object-contain select-none" style={{ width: containerRef.current ? containerRef.current.offsetWidth : '100%' }} draggable="false" /> : null}
+                        <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-20">Before</div>
+                    </div>
+                    
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-30" style={{ left: `${sliderPosition}%` }}>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 backdrop-blur-md rounded-full border border-white flex items-center justify-center shadow-lg">
+                            <div className="flex gap-0.5"><div className="w-0.5 h-3 bg-white" /><div className="w-0.5 h-3 bg-white" /></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 메인 앱 ---
+        const App = () => {
+            const [view, setView] = useState('LOGIN'); 
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [cases, setCases] = useState(DEMO_CASES);
+            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [selectedTag, setSelectedTag] = useState('전체');
+            const [selectedCase, setSelectedCase] = useState(null);
+            const [caseViewType, setCaseViewType] = useState('front');
+
+            // Lucide 아이콘 리로드 (화면 전환 시)
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+
+            const handleLogin = (adminStatus) => { setIsAdmin(adminStatus); setView('DASHBOARD'); };
+
+            const filteredCases = selectedCategory 
+                ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || c.tags.includes(selectedTag))) 
+                : [];
+
+            const CategoryIcon = ({ name, rotate }) => {
+                const IconComponent = Icons[name] || Icons.Sparkles;
+                return <IconComponent size={20} className={rotate ? `rotate-${rotate}` : ''} />;
+            };
+
+            if (view === 'LOGIN') return <LoginScreen onLogin={handleLogin} />;
+
+            return (
+                <div className="bg-neutral-900 min-h-screen text-neutral-100 font-sans selection:bg-amber-500/30">
+                    {/* 헤더 */}
+                    <header className="fixed top-0 w-full z-50 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800 h-14 flex items-center justify-between px-4">
+                        {view !== 'DASHBOARD' ? (
+                            <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-neutral-400 hover:text-white"><Icons.ArrowLeft size={20} /></button>
+                        ) : <div className="w-8"></div>}
+                        <h2 className="font-serif text-lg text-amber-500/90 tracking-widest">{view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}</h2>
+                        <div className="w-8"></div>
+                    </header>
+
+                    {/* 메인 컨텐츠 */}
+                    <main className="pt-16 pb-6 px-4 max-w-3xl mx-auto min-h-screen">
+                        {view === 'DASHBOARD' && (
+                            <div className="animate-fade-in">
+                                {isAdmin && <div className="mb-4 bg-amber-900/20 border border-amber-500/30 p-3 rounded flex items-center gap-2 text-amber-500 text-xs"><Icons.Monitor size={14}/> 관리자 모드 (Demo)</div>}
+                                <div className="mb-6 text-center pt-2"><h3 className="text-xl font-light text-neutral-300">상담하실 <span className="text-amber-500 font-serif italic pr-1">Category</span>를 선택하세요</h3></div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {CATEGORIES.map((cat) => (
+                                        <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} className="group bg-neutral-800 border border-neutral-700/50 hover:border-amber-500/50 rounded-lg p-5 flex flex-col items-center justify-center gap-3 transition-all aspect-[1.1/1]">
+                                            <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-neutral-900 transition-colors">
+                                                <CategoryIcon name={cat.icon} rotate={cat.rotateIcon} />
+                                            </div>
+                                            <span className="text-sm font-medium text-neutral-300 group-hover:text-white tracking-wide">{cat.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'LIST' && (
+                            <div className="animate-fade-in">
+                                <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                                    <div className="flex gap-2 w-max">
+                                        {selectedCategory.tags.map(tag => (
+                                            <button key={tag} onClick={() => setSelectedTag(tag)} className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedTag === tag ? 'bg-amber-500 border-amber-500 text-neutral-900' : 'border-neutral-700 text-neutral-400'}`}>#{tag}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {filteredCases.map(item => (
+                                        <div key={item.id} onClick={() => { setSelectedCase(item); setView('DETAIL'); }} className="relative bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700/50 cursor-pointer group aspect-[4/5]">
+                                            <img src={item.images.front.after} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/90 via-transparent to-transparent opacity-60" />
+                                            <div className="absolute bottom-2 left-3 right-3">
+                                                <p className="text-[10px] text-amber-500 font-bold mb-0.5">{item.tags[0]}</p>
+                                                <p className="text-xs text-neutral-200 line-clamp-1">{item.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredCases.length === 0 && <div className="col-span-2 text-center py-20 text-neutral-500">등록된 케이스가 없습니다.</div>}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'DETAIL' && selectedCase && (
+                            <div className="animate-fade-in flex flex-col h-[calc(100vh-80px)]">
+                                <div className="flex bg-neutral-800 p-1 rounded-lg mb-4 shrink-0">
+                                    {['front', 'angle45', 'side'].map((v) => (
+                                        <button key={v} onClick={() => setCaseViewType(v)} className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${caseViewType === v ? 'bg-neutral-700 text-amber-500 shadow-sm' : 'text-neutral-500'}`}>
+                                            {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center min-h-0">
+                                    <div className="w-full relative rounded-xl border border-neutral-700 overflow-hidden shadow-2xl bg-black">
+                                        <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before || selectedCase.images.front.before} afterImage={selectedCase.images[caseViewType]?.after || selectedCase.images.front.after} />
+                                    </div>
+                                    <div className="mt-6 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-[10px] rounded border border-neutral-700">ID: {selectedCase.patientId}</span>
+                                            <div className="flex gap-2">{selectedCase.tags.map(t => <span key={t} className="text-xs text-amber-500/80">#{t}</span>)}</div>
+                                        </div>
+                                        <h3 className="text-lg font-medium text-white">{selectedCase.description}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
