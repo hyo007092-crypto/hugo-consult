@@ -203,7 +203,6 @@
             );
         };
 
-        // 업로드/수정 모달 (블러 제거됨)
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ categoryId: categories[0].id, patientId: '', desc: '', tags: '', frontBefore: null, frontAfter: null, angleBefore: null, angleAfter: null, sideBefore: null, sideAfter: null });
@@ -436,10 +435,7 @@
                                 </div>
                                 <div className="flex-1 flex flex-col justify-center min-h-0">
                                     <div className="w-full relative rounded-xl border border-neutral-700 overflow-hidden shadow-2xl bg-black">
-                                        <CompareSlider 
-                                            beforeImage={selectedCase.images[caseViewType]?.before} 
-                                            afterImage={selectedCase.images[caseViewType]?.after} 
-                                        />
+                                        <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
                                     </div>
                                     <div className="mt-6 space-y-2">
                                         <div className="flex items-center justify-between"><span className="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-[10px] rounded border border-neutral-700">ID: {selectedCase.patientId}</span></div>
