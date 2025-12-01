@@ -33,18 +33,15 @@
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // =================================================================================
-        // ▼▼▼ [중요] 아까 복사한 'const firebaseConfig' 코드를 바로 아래에 붙여넣으세요! ▼▼▼
-        // (원래 있던 예시를 지우고, 본인 것으로 덮어씌우면 됩니다)
-        
+        // ▼▼▼ 고객님의 파이어베이스 설정이 적용되었습니다 ▼▼▼
         const firebaseConfig = {
-            apiKey: "AIzaSy...",  // <-- 여기부터
+            apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
             projectId: "hugo-consult",
-            // ... (나머지 내용들) ...
-            appId: "1:..." 
-        }; // <-- 여기까지!
-
-        // ▲▲▲ [끝] 여기까지만 수정하시면 됩니다! ▲▲▲
+            storageBucket: "hugo-consult.firebasestorage.app",
+            messagingSenderId: "445939856276",
+            appId: "1:445939856276:web:a0d00cad2f1ca756d05581"
+        };
         // =================================================================================
 
         // 파이어베이스 실행
@@ -207,7 +204,7 @@
                     onClose();
                 } catch(e) {
                     console.error(e);
-                    alert("업로드 실패: " + e.message + "\n(데이터베이스 규칙을 확인하세요)");
+                    alert("업로드 실패: " + e.message + "\n(혹시 Firestore Database를 '테스트 모드'로 생성하셨나요?)");
                 } finally {
                     setUploading(false);
                 }
