@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ▼▼▼ [중요] 자동 번역 방지 태그 추가 ▼▼▼ -->
+    <meta name="google" content="notranslate">
     <title>Hugo Aesthetic Consult</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -30,13 +32,18 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="notranslate">
     <div id="error-log"></div>
     <div id="root"></div>
 
     <script>
         // 안전 장치: 에러 발생 시 화면에 표시
         window.onerror = function(msg, url, line) {
+            // 번역기 오류 무시
+            if (msg.includes("removeChild") || msg.includes("insertBefore")) {
+                console.warn("번역기 충돌 감지됨 (무시함)");
+                return true; 
+            }
             const errorBox = document.getElementById('error-log');
             errorBox.style.display = 'block';
             errorBox.innerHTML = `오류 발생: ${msg} (줄: ${line}) <br> 관리자에게 이 화면을 보여주세요.`;
@@ -371,9 +378,9 @@
                             <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
                             
                             <div className="space-y-3 pt-2 border-t border-neutral-700">
-                                <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                                <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                                <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                                <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                                <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                                <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
                             </div>
                             <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
                                 {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
