@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- ▼▼▼ [중요] 자동 번역 방지 태그 추가 ▼▼▼ -->
     <meta name="google" content="notranslate">
     <title>Hugo Aesthetic Consult</title>
     
@@ -13,7 +12,6 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
 
-    <!-- 에러 방지용 스타일 -->
     <style>
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -25,7 +23,6 @@
         #error-log { display: none; position: fixed; top: 0; left: 0; width: 100%; background: red; color: white; padding: 10px; z-index: 9999; }
     </style>
 
-    <!-- 필수 라이브러리 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -37,26 +34,21 @@
     <div id="root"></div>
 
     <script>
-        // 안전 장치: 에러 발생 시 화면에 표시
+        // 번역기 충돌 에러 무시
         window.onerror = function(msg, url, line) {
-            // 번역기 오류 무시
-            if (msg.includes("removeChild") || msg.includes("insertBefore")) {
-                console.warn("번역기 충돌 감지됨 (무시함)");
+            if (msg.includes("removeChild") || msg.includes("insertBefore") || msg.includes("NotFound")) {
+                console.warn("번역기 충돌 무시됨");
                 return true; 
             }
-            const errorBox = document.getElementById('error-log');
-            errorBox.style.display = 'block';
-            errorBox.innerHTML = `오류 발생: ${msg} (줄: ${line}) <br> 관리자에게 이 화면을 보여주세요.`;
             return false;
         };
     </script>
 
-    <!-- 파이어베이스 연결 설정 (Module) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 파이어베이스 설정 (원장님 전용) ▼▼▼
+        // ▼▼▼ 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -71,18 +63,14 @@
             const db = getFirestore(app);
             window.db = db;
             window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
-            console.log("Firebase Connected");
         } catch(e) {
-            console.error("Firebase Connection Failed", e);
-            alert("서버 연결 실패: " + e.message);
+            console.error("Firebase Init Error", e);
         }
     </script>
 
-    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
-        // 아이콘 컴포넌트 안전하게 감싸기
         const IconWrapper = ({ name, ...props }) => {
             return <i data-lucide={name} {...props}></i>;
         };
@@ -104,8 +92,7 @@
             Edit2: (props) => <IconWrapper name="edit-2" {...props} />,
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
-            Check: (props) => <IconWrapper name="check" {...props} />,
-            EyeOff: (props) => <IconWrapper name="eye-off" {...props} />
+            Check: (props) => <IconWrapper name="check" {...props} />
         };
 
         const CATEGORIES = [
@@ -121,8 +108,7 @@
             { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
-        // 이미지 처리 함수 (압축 + 블러)
-        const processImage = (file, blurPoints = []) => {
+        const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -137,66 +123,10 @@
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                        if (blurPoints.length > 0) {
-                            blurPoints.forEach(point => {
-                                const x = point.x * canvas.width;
-                                const y = point.y * canvas.height;
-                                const radius = 40; 
-                                ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                                ctx.clip();
-                                
-                                // 모자이크 효과
-                                const sampleSize = 10;
-                                for (let bx = x - radius; bx < x + radius; bx += sampleSize) {
-                                    for (let by = y - radius; by < y + radius; by += sampleSize) {
-                                        if (Math.sqrt((bx - x)**2 + (by - y)**2) < radius) {
-                                            const pixelData = ctx.getImageData(bx, by, 1, 1).data;
-                                            ctx.fillStyle = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
-                                            ctx.fillRect(bx, by, sampleSize, sampleSize);
-                                        }
-                                    }
-                                }
-                                ctx.restore();
-                            });
-                        }
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                        resolve(canvas.toDataURL('image/jpeg', 0.6)); 
                     };
                 };
             });
-        };
-
-        // 이미지 편집기 (블러 터치용)
-        const ImageEditor = ({ imageSrc, onSave, onCancel }) => {
-            const [blurPoints, setBlurPoints] = useState([]);
-            const imgRef = useRef(null);
-
-            const handleImageClick = (e) => {
-                if (!imgRef.current) return;
-                const rect = imgRef.current.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width;
-                const y = (e.clientY - rect.top) / rect.height;
-                setBlurPoints([...blurPoints, { x, y }]);
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center p-4">
-                    <div className="relative max-w-full max-h-[70vh]">
-                        <img ref={imgRef} src={imageSrc} className="max-w-full max-h-[70vh] object-contain border border-neutral-700" onClick={handleImageClick} />
-                        {blurPoints.map((p, i) => (
-                            <div key={i} className="absolute w-12 h-12 bg-white/20 backdrop-blur-md rounded-full border border-white/50 pointer-events-none" style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, transform: 'translate(-50%, -50%)' }} />
-                        ))}
-                    </div>
-                    <p className="text-white text-sm mt-3 mb-4 bg-neutral-800 px-3 py-1 rounded-full">👆 가리고 싶은 부위를 터치하세요</p>
-                    <div className="flex gap-3 w-full max-w-xs">
-                        <button onClick={onCancel} className="flex-1 py-3 bg-neutral-700 text-white rounded-lg">취소</button>
-                        <button onClick={() => setBlurPoints(blurPoints.slice(0, -1))} className="flex-1 py-3 bg-neutral-600 text-white rounded-lg">되돌리기</button>
-                        <button onClick={() => onSave(blurPoints)} className="flex-1 py-3 bg-amber-600 text-white rounded-lg font-bold">완료</button>
-                    </div>
-                </div>
-            );
         };
 
         const LoginScreen = ({ onLogin }) => {
@@ -247,10 +177,19 @@
             };
             return (
                 <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-lg bg-black" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>}
+                    {afterImage ? (
+                        <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-xs">After 이미지 없음</div>
+                    )}
                     <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded">After</div>
+                    
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? (
+                            <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>
+                        )}
                         <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-lg z-30" style={{ left: `${sliderPosition}%` }}>
@@ -260,11 +199,15 @@
             );
         };
 
-        // 업로드/수정 모달
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
-            const [data, setData] = useState({ categoryId: categories[0].id, patientId: '', desc: '', tags: '', frontBefore: null, frontAfter: null, angleBefore: null, angleAfter: null, sideBefore: null, sideAfter: null });
-            const [editingImage, setEditingImage] = useState(null);
+            const [data, setData] = useState({ 
+                categoryId: categories[0].id, 
+                patientId: '', desc: '', tags: '', 
+                frontBefore: null, frontAfter: null, 
+                angleBefore: null, angleAfter: null, 
+                sideBefore: null, sideAfter: null 
+            });
 
             useEffect(() => {
                 if (initialData) {
@@ -283,27 +226,16 @@
                 }
             }, [initialData]);
             
-            const handleFileSelect = (e, key) => {
-                if (e.target.files[0]) {
-                    const file = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        setEditingImage({ key, file, preview: e.target.result });
-                    };
-                    reader.readAsDataURL(file);
+            const handleFile = async (e, key) => {
+                if(e.target.files[0]) {
+                    const compressed = await compressImage(e.target.files[0]);
+                    setData(prev => ({...prev, [key]: compressed}));
                 }
             };
 
-            const handleBlurSave = async (blurPoints) => {
-                if (!editingImage) return;
-                const processedImage = await processImage(editingImage.file, blurPoints);
-                setData(prev => ({ ...prev, [editingImage.key]: processedImage }));
-                setEditingImage(null);
-            };
-
             const handleSave = async () => {
-                if(!window.db) return alert("서버 연결 실패");
-                if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
+                if(!window.db) return alert("파이어베이스 연결 실패.");
+                if(!data.patientId || !data.desc) return alert("필수 정보(ID, 내용)를 입력해주세요.");
                 
                 setUploading(true);
                 try {
@@ -322,15 +254,16 @@
 
                     if (initialData) {
                         await updateDoc(doc(window.db, "cases", initialData.id), docData);
-                        alert("수정되었습니다.");
+                        alert("수정 완료!");
                     } else {
                         docData.createdAt = serverTimestamp();
                         await addDoc(collection(window.db, "cases"), docData);
-                        alert("저장되었습니다.");
+                        alert("업로드 완료!");
                     }
                     onClose();
                 } catch(e) {
-                    alert("오류: " + e.message);
+                    console.error(e);
+                    alert("오류 발생: " + e.message);
                 } finally {
                     setUploading(false);
                 }
@@ -341,53 +274,49 @@
                     <p className="text-xs text-neutral-400 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-2">
                         <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before (터치)</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyBefore)}/>
+                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
                         </label>
                         <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After (터치)</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyAfter)}/>
+                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
                         </label>
                     </div>
                 </div>
             );
 
             return (
-                <>
-                    {editingImage && <ImageEditor imageSrc={editingImage.preview} onSave={handleBlurSave} onCancel={() => setEditingImage(null)} />}
-                    
-                    <div className={`fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center ${editingImage ? 'hidden' : ''}`}>
-                        <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center border-b border-neutral-700 pb-3">
-                                <h3 className="text-lg font-medium text-white">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
-                                <button onClick={onClose}><Icons.X size={20}/></button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-xs text-neutral-500 block mb-1">카테고리</label>
-                                    <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" value={data.categoryId} onChange={e=>setData({...data, categoryId: e.target.value})}>
-                                        {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs text-neutral-500 block mb-1">환자 ID</label>
-                                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="예: 240101-A" value={data.patientId} onChange={e=>setData({...data, patientId: e.target.value})}/>
-                                </div>
-                            </div>
-                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="수술 내용" value={data.desc} onChange={e=>setData({...data, desc: e.target.value})}/>
-                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
-                            
-                            <div className="space-y-3 pt-2 border-t border-neutral-700">
-                                <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                                <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                                <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
-                            </div>
-                            <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
-                                {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
-                            </button>
+                <div className="fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center">
+                    <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center border-b border-neutral-700 pb-3">
+                            <h3 className="text-lg font-medium text-white">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
+                            <button onClick={onClose}><Icons.X size={20}/></button>
                         </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs text-neutral-500 block mb-1">카테고리</label>
+                                <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" value={data.categoryId} onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                    {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-neutral-500 block mb-1">환자 ID</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="예: 240101-A" value={data.patientId} onChange={e=>setData({...data, patientId: e.target.value})}/>
+                            </div>
+                        </div>
+                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="수술 내용" value={data.desc} onChange={e=>setData({...data, desc: e.target.value})}/>
+                        <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
+                        
+                        <div className="space-y-3 pt-2 border-t border-neutral-700">
+                            <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                            <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                            <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                        </div>
+                        <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
+                            {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
+                        </button>
                     </div>
-                </>
+                </div>
             );
         };
 
