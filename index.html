@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 번역기 차단 (가장 중요: 검은 화면 방지) -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -42,12 +41,11 @@
     </div>
 
     <script>
-        // 안전 장치: 번역기 충돌 에러 무시
         window.onerror = function(msg, url, line) {
+            // 리액트와 루시드 아이콘 충돌로 인한 노드 삭제 에러 무시
             if (msg.includes("removeChild") || msg.includes("insertBefore") || msg.includes("NotFound")) {
                 return true; 
             }
-            // 진짜 에러는 화면에 표시
             const errorBox = document.getElementById('error-log');
             if (errorBox) {
                 errorBox.style.display = 'block';
@@ -57,12 +55,10 @@
         };
     </script>
 
-    <!-- 파이어베이스 연결 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -79,7 +75,6 @@
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
-    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
@@ -120,7 +115,6 @@
             { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
-        // 이미지 압축 함수
         const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -203,6 +197,23 @@
             );
         };
 
+        // CaseModal에서 사용할 파일 인풋 컴포넌트 분리
+        const FileInput = ({ label, bindKeyBefore, bindKeyAfter, data, onFileChange }) => (
+            <div className="space-y-1">
+                <p className="text-xs text-neutral-400 ml-1">{label}</p>
+                <div className="grid grid-cols-2 gap-2">
+                    <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
+                        {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
+                        <input type="file" hidden accept="image/*" onChange={e=>onFileChange(e, bindKeyBefore)}/>
+                    </label>
+                    <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
+                        {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
+                        <input type="file" hidden accept="image/*" onChange={e=>onFileChange(e, bindKeyAfter)}/>
+                    </label>
+                </div>
+            </div>
+        );
+
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ categoryId: categories[0].id, patientId: '', desc: '', tags: '', frontBefore: null, frontAfter: null, angleBefore: null, angleAfter: null, sideBefore: null, sideAfter: null });
@@ -210,9 +221,9 @@
             useEffect(() => {
                 if (initialData) {
                     setData({
-                        categoryId: initialData.categoryId,
-                        patientId: initialData.patientId,
-                        desc: initialData.description,
+                        categoryId: initialData.categoryId || categories[0].id,
+                        patientId: initialData.patientId || '',
+                        desc: initialData.description || '',
                         tags: initialData.tags ? initialData.tags.join(', ') : '',
                         frontBefore: initialData.images?.front?.before || null,
                         frontAfter: initialData.images?.front?.after || null,
@@ -232,8 +243,8 @@
             };
 
             const handleSave = async () => {
-                if(!window.db) return alert("파이어베이스 연결 실패.");
-                if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
+                if(!window.db || !window.firestore) return alert("파이어베이스 연결 실패. 잠시 후 다시 시도하세요.");
+                if(!data.patientId || !data.desc) return alert("필수 정보(환자ID, 내용)를 입력해주세요.");
                 
                 setUploading(true);
                 try {
@@ -267,22 +278,6 @@
                 }
             };
 
-            const FileInput = ({ label, bindKeyBefore, bindKeyAfter }) => (
-                <div className="space-y-1">
-                    <p className="text-xs text-neutral-400 ml-1">{label}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                        <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyBefore] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyBefore] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">Before</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
-                        </label>
-                        <label className={`aspect-[4/3] border border-dashed border-neutral-600 rounded flex flex-col items-center justify-center cursor-pointer transition-colors ${data[bindKeyAfter] ? 'bg-neutral-800 border-amber-500' : 'bg-neutral-900 hover:bg-neutral-800'}`}>
-                            {data[bindKeyAfter] ? <Icons.Check className="text-amber-500" size={16}/> : <span className="text-[10px] text-neutral-500">After</span>}
-                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
-                        </label>
-                    </div>
-                </div>
-            );
-
             return (
                 <div className="fixed inset-0 bg-black/90 z-50 p-4 overflow-y-auto flex items-center justify-center">
                     <div className="bg-neutral-800 rounded-xl p-6 w-full max-w-lg space-y-4 border border-neutral-700 max-h-[90vh] overflow-y-auto">
@@ -306,9 +301,9 @@
                         <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-sm text-white" placeholder="태그 (쉼표 구분)" value={data.tags} onChange={e=>setData({...data, tags: e.target.value})}/>
                         
                         <div className="space-y-3 pt-2 border-t border-neutral-700">
-                            <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                            <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                            <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                            <FileInput label="1. 정면" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" data={data} onFileChange={handleFile} />
+                            <FileInput label="2. 45도" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" data={data} onFileChange={handleFile} />
+                            <FileInput label="3. 측면" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" data={data} onFileChange={handleFile} />
                         </div>
                         <button onClick={handleSave} disabled={uploading} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-bold text-sm flex justify-center mt-4">
                             {uploading ? <div className="loader"/> : (initialData ? "수정 완료" : "저장 및 업로드")}
