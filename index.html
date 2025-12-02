@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 번역기 차단 -->
+    <!-- [중요] 번역기 자동 실행 원천 차단 -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -12,6 +12,28 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
+
+    <!-- [필살기] 브라우저 번역기 충돌 방지 스크립트 (가장 먼저 실행) -->
+    <script>
+        if (typeof Node === 'function' && Node.prototype) {
+            const originalRemoveChild = Node.prototype.removeChild;
+            Node.prototype.removeChild = function(child) {
+                if (child.parentNode !== this) {
+                    // 번역기가 돔을 건드려서 에러가 날 경우 무시하고 넘어감
+                    return child;
+                }
+                return originalRemoveChild.apply(this, arguments);
+            }
+            
+            const originalInsertBefore = Node.prototype.insertBefore;
+            Node.prototype.insertBefore = function(newNode, referenceNode) {
+                if (referenceNode && referenceNode.parentNode !== this) {
+                    return newNode;
+                }
+                return originalInsertBefore.apply(this, arguments);
+            }
+        }
+    </script>
 
     <style>
         /* 폰트 설정 */
@@ -26,7 +48,8 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
         
-        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
+        /* 고급스러운 화이트 테마 */
+        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; }
         
         .loader { border: 3px solid #E5E7EB; border-top: 3px solid #D4AF37; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -53,22 +76,6 @@
 </head>
 <body class="notranslate font-sans antialiased">
 
-    <!-- 번역기 충돌 방지 -->
-    <script>
-        if (typeof Node === 'function' && Node.prototype) {
-            const originalRemoveChild = Node.prototype.removeChild;
-            Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) return child;
-                return originalRemoveChild.apply(this, arguments);
-            }
-            const originalInsertBefore = Node.prototype.insertBefore;
-            Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) return newNode;
-                return originalInsertBefore.apply(this, arguments);
-            }
-        }
-    </script>
-
     <div id="root">
         <div class="min-h-screen flex items-center justify-center bg-white">
             <div class="text-center">
@@ -78,11 +85,12 @@
         </div>
     </div>
 
+    <!-- 파이어베이스 연결 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 파이어베이스 설정 ▼▼▼
+        // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -99,6 +107,7 @@
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
+    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
@@ -153,7 +162,6 @@
             });
         };
 
-        // --- 하단 푸터 컴포넌트 ---
         const Footer = () => {
             return (
                 <div className="mt-8 mb-6 text-center space-y-1">
@@ -225,7 +233,6 @@
                 }
             };
             return (
-                // 1:1 비율 고정 및 꽉 채우기
                 <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
                     {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
@@ -242,7 +249,7 @@
             );
         };
 
-        // 통합 모달 (수정/등록)
+        // 통합 케이스 모달 (등록 + 수정) - 수정 기능 포함됨
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ 
@@ -253,6 +260,7 @@
                 sideBefore: null, sideAfter: null 
             });
 
+            // [수정] 초기 데이터 로드 (수정 시에만 작동)
             useEffect(() => {
                 if (initialData) {
                     setData({
@@ -267,9 +275,18 @@
                         sideBefore: initialData.images?.side?.before || null,
                         sideAfter: initialData.images?.side?.after || null,
                     });
+                } else {
+                    // 추가 모드일 때 초기화
+                    setData({ 
+                        categoryId: categories[0].id, 
+                        patientId: '', desc: '', tags: '', 
+                        frontBefore: null, frontAfter: null, 
+                        angleBefore: null, angleAfter: null, 
+                        sideBefore: null, sideAfter: null 
+                    });
                 }
-            }, [initialData]);
-            
+            }, [initialData, categories]);
+
             const handleFile = async (e, key) => {
                 if(e.target.files[0]) {
                     const compressed = await compressImage(e.target.files[0]);
@@ -284,6 +301,7 @@
                 setUploading(true);
                 try {
                     const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
+                    
                     const docData = {
                         categoryId: data.categoryId,
                         patientId: data.patientId,
@@ -297,9 +315,11 @@
                     };
 
                     if (initialData) {
+                        // [수정] 기존 문서 업데이트
                         await updateDoc(doc(window.db, "cases", initialData.id), docData);
                         alert("수정 완료!");
                     } else {
+                        // [신규] 새 문서 생성
                         docData.createdAt = serverTimestamp();
                         await addDoc(collection(window.db, "cases"), docData);
                         alert("업로드 완료!");
@@ -317,11 +337,11 @@
                     <p className="text-xs font-bold text-teal-600 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-3">
                         <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyBefore] ? <Icons.Check className="text-teal-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
+                            {data[bindKeyBefore] ? <img src={data[bindKeyBefore]} className="w-full h-full object-cover rounded-lg" /> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
                         </label>
                         <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyAfter] ? <Icons.Check className="text-gold-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
+                            {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover rounded-lg" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
                         </label>
                     </div>
@@ -397,32 +417,18 @@
                 if(window.lucide) window.lucide.createIcons();
             });
 
-            // 뒤로가기 처리 (앱 종료 방지 및 이전 화면 이동)
+            // 뒤로가기 처리
             useEffect(() => {
                 const handlePopState = (event) => {
                     if (view === 'DETAIL') {
                         setView('LIST');
                     } else if (view === 'LIST') {
                         setView('DASHBOARD');
-                    } else if (view === 'DASHBOARD' && !isAdmin) {
-                        // 대시보드에서는 뒤로가기 시 아무 동작 안함 (브라우저 종료 방지용)
                     }
                 };
-
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
-
-                return () => {
-                    window.removeEventListener('popstate', handlePopState);
-                };
-            }, [view, isAdmin]);
-
-            // 뷰 변경 시 히스토리 스택 관리
-            useEffect(() => {
-                 if (view !== 'LOGIN') {
-                     // 상태를 푸시하지 않고 현재 상태를 교체하거나 관리 (중복 푸시 방지)
-                     // window.history.pushState(null, '', window.location.href); // 이 줄 삭제하여 중복 방지
-                 }
+                return () => window.removeEventListener('popstate', handlePopState);
             }, [view]);
 
             useEffect(() => {
@@ -457,7 +463,9 @@
             };
 
             const CategoryIcon = ({ name, rotate }) => {
-                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
+                // 아이콘 이름 직접 사용 (카테고리에서 아이콘 제거 요청 시 여기를 수정하면 됨)
+                // 현재는 디자인 유지를 위해 텍스트 위주로 사용하되 아이콘 로직은 둠
+                return null; 
             };
 
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
@@ -574,7 +582,7 @@
                         <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
 
-                    {showUpload && <UploadModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
+                    {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
                 </div>
             );
         };
