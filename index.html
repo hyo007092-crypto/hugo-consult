@@ -59,12 +59,17 @@
         if (typeof Node === 'function' && Node.prototype) {
             const originalRemoveChild = Node.prototype.removeChild;
             Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) { return child; }
+                if (child.parentNode !== this) {
+                    return child;
+                }
                 return originalRemoveChild.apply(this, arguments);
             }
+            
             const originalInsertBefore = Node.prototype.insertBefore;
             Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) { return newNode; }
+                if (referenceNode && referenceNode.parentNode !== this) {
+                    return newNode;
+                }
                 return originalInsertBefore.apply(this, arguments);
             }
         }
@@ -116,8 +121,7 @@
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
-            X: (props) => <IconWrapper name="x" {...props} />,
-            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
+            X: (props) => <IconWrapper name="x" {...props} />
         };
 
         const CATEGORIES = [
@@ -209,12 +213,13 @@
                 }
             };
             return (
-                // object-contain 적용: 사진 전체가 잘리지 않고 다 보임 (빈 공간은 회색)
-                <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
+                // aspect-[1/1]로 변경하여 정사각형에 가까운 비율로 조정 (기존 4/5)
+                // object-cover 유지하여 여백 없이 꽉 채움
+                <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
+                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-cover" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
                         <div className="absolute top-4 left-4 bg-teal-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.3)] z-30" style={{ left: `${sliderPosition}%` }}>
@@ -275,12 +280,12 @@
                 <div className="space-y-2">
                     <p className="text-xs font-bold text-teal-600 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-3">
-                        <label className={`aspect-[4/3] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyBefore] ? <Icons.Check className="text-teal-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium">Before</span>}
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyBefore] ? <Icons.Check className="text-teal-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(1080x1080 권장)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
                         </label>
-                        <label className={`aspect-[4/3] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyAfter] ? <Icons.Check className="text-gold-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium">After</span>}
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyAfter] ? <Icons.Check className="text-gold-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(1080x1080 권장)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
                         </label>
                     </div>
@@ -294,6 +299,12 @@
                             <h3 className="text-lg font-bold text-gray-800">새 케이스 등록</h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                         </div>
+                        
+                        {/* 규격 안내 메시지 추가 */}
+                        <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
+                            <span className="text-teal-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
@@ -363,9 +374,7 @@
             };
 
             const CategoryIcon = ({ name, rotate }) => {
-                // 메인 메뉴에서는 아이콘 대신 텍스트만 사용할 경우 아래 부분을 수정 가능
-                // 현재는 요청에 따라 텍스트 위주로 구성됨
-                return null; 
+                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
             };
 
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
