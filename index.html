@@ -59,17 +59,12 @@
         if (typeof Node === 'function' && Node.prototype) {
             const originalRemoveChild = Node.prototype.removeChild;
             Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) {
-                    return child;
-                }
+                if (child.parentNode !== this) { return child; }
                 return originalRemoveChild.apply(this, arguments);
             }
-            
             const originalInsertBefore = Node.prototype.insertBefore;
             Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) {
-                    return newNode;
-                }
+                if (referenceNode && referenceNode.parentNode !== this) { return newNode; }
                 return originalInsertBefore.apply(this, arguments);
             }
         }
@@ -87,7 +82,8 @@
     <!-- 파이어베이스 연결 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // updateDoc 추가됨 (수정 기능을 위해 필요)
+        import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
@@ -103,7 +99,8 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.firestore = { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
+        // updateDoc 추가
+        window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
     <!-- 리액트 앱 로직 -->
@@ -118,6 +115,7 @@
             ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
             Plus: (props) => <IconWrapper name="plus" {...props} />,
             Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
+            Edit2: (props) => <IconWrapper name="edit-2" {...props} />, // 수정 아이콘 추가
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
@@ -159,7 +157,7 @@
             });
         };
 
-        // --- 하단 푸터 컴포넌트 (수정됨) ---
+        // --- 하단 푸터 컴포넌트 ---
         const Footer = () => {
             return (
                 <div className="mt-8 mb-6 text-center space-y-1">
@@ -231,7 +229,6 @@
                 }
             };
             return (
-                // 정사각형(1:1) 비율, 꽉 찬 화면(cover)
                 <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
                     {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
@@ -248,7 +245,8 @@
             );
         };
 
-        const UploadModal = ({ onClose, categories }) => {
+        // 통합 케이스 모달 (등록 + 수정)
+        const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ 
                 categoryId: categories[0].id, 
@@ -258,6 +256,24 @@
                 sideBefore: null, sideAfter: null 
             });
             
+            // 수정 모드일 경우 초기 데이터 세팅
+            useEffect(() => {
+                if (initialData) {
+                    setData({
+                        categoryId: initialData.categoryId,
+                        patientId: initialData.patientId,
+                        desc: initialData.description,
+                        tags: initialData.tags ? initialData.tags.join(', ') : '',
+                        frontBefore: initialData.images?.front?.before || null,
+                        frontAfter: initialData.images?.front?.after || null,
+                        angleBefore: initialData.images?.angle45?.before || null,
+                        angleAfter: initialData.images?.angle45?.after || null,
+                        sideBefore: initialData.images?.side?.before || null,
+                        sideAfter: initialData.images?.side?.after || null,
+                    });
+                }
+            }, [initialData]);
+
             const handleFile = async (e, key) => {
                 if(e.target.files[0]) {
                     const compressed = await compressImage(e.target.files[0]);
@@ -271,8 +287,9 @@
                 
                 setUploading(true);
                 try {
-                    const { collection, addDoc, serverTimestamp } = window.firestore;
-                    await addDoc(collection(window.db, "cases"), {
+                    const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
+                    
+                    const docData = {
                         categoryId: data.categoryId,
                         patientId: data.patientId,
                         description: data.desc,
@@ -281,10 +298,19 @@
                             front: { before: data.frontBefore, after: data.frontAfter },
                             angle45: { before: data.angleBefore, after: data.angleAfter },
                             side: { before: data.sideBefore, after: data.sideAfter }
-                        },
-                        createdAt: serverTimestamp()
-                    });
-                    alert("업로드 완료!");
+                        }
+                    };
+
+                    if (initialData) {
+                        // 수정 로직
+                        await updateDoc(doc(window.db, "cases", initialData.id), docData);
+                        alert("수정 완료!");
+                    } else {
+                        // 생성 로직
+                        docData.createdAt = serverTimestamp();
+                        await addDoc(collection(window.db, "cases"), docData);
+                        alert("업로드 완료!");
+                    }
                     onClose();
                 } catch(e) {
                     alert("실패: " + e.message);
@@ -313,11 +339,10 @@
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-                            <h3 className="text-lg font-bold text-gray-800">새 케이스 등록</h3>
+                            <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                         </div>
                         
-                        {/* 규격 안내 추가 */}
                         <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
                             <span className="text-teal-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
                         </div>
@@ -325,22 +350,30 @@
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
-                                <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
+                                    value={data.categoryId}
+                                    onChange={e=>setData({...data, categoryId: e.target.value})}>
                                     {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" onChange={e=>setData({...data, patientId: e.target.value})}/>
+                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
+                                    value={data.patientId}
+                                    onChange={e=>setData({...data, patientId: e.target.value})}/>
                             </div>
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
-                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" onChange={e=>setData({...data, desc: e.target.value})}/>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
+                                value={data.desc}
+                                onChange={e=>setData({...data, desc: e.target.value})}/>
                         </div>
                         <div>
                              <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
-                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" onChange={e=>setData({...data, tags: e.target.value})}/>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
+                                value={data.tags}
+                                onChange={e=>setData({...data, tags: e.target.value})}/>
                         </div>
                         
                         <div className="space-y-4 pt-2 border-t border-gray-100">
@@ -349,7 +382,7 @@
                             <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
                         </div>
                         <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
-                            {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : "저장 및 업로드"}
+                            {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
                         </button>
                     </div>
                 </div>
@@ -365,6 +398,7 @@
             const [selectedCase, setSelectedCase] = useState(null);
             const [caseViewType, setCaseViewType] = useState('front');
             const [showUpload, setShowUpload] = useState(false);
+            const [editingCase, setEditingCase] = useState(null); // 수정할 케이스 상태
 
             useEffect(() => {
                 if(window.lucide) window.lucide.createIcons();
@@ -390,6 +424,19 @@
                 }
             };
 
+            // 수정 버튼 핸들러
+            const handleEdit = (e, item) => {
+                e.stopPropagation();
+                setEditingCase(item); // 수정할 데이터 세팅
+                setShowUpload(true);  // 모달 열기
+            };
+
+            // 모달 닫을 때 상태 초기화
+            const handleCloseModal = () => {
+                setShowUpload(false);
+                setEditingCase(null);
+            };
+
             const CategoryIcon = ({ name, rotate }) => {
                 return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
             };
@@ -409,7 +456,7 @@
                            </h2>
                         </div>
 
-                        {isAdmin ? <button onClick={()=>setShowUpload(true)} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
+                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
                     </header>
 
                     <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
@@ -443,14 +490,20 @@
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
-                                        <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[4/5] cursor-pointer group hover:shadow-xl transition-all">
+                                        <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
                                             <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                                             <div className="absolute bottom-3 left-3 right-3">
                                                 <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
                                                 <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
                                             </div>
-                                            {isAdmin && <button onClick={(e)=>handleDelete(e, item.id)} className="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white hover:bg-red-500/80 transition-colors"><Icons.Trash2 size={14}/></button>}
+                                            {isAdmin && (
+                                                <div className="absolute top-2 right-2 flex gap-1">
+                                                    {/* 수정 버튼 추가 */}
+                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={14}/></button>
+                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={14}/></button>
+                                                </div>
+                                            )}
                                         </div>
                                     )) : (
                                         <div className="col-span-2 text-center py-20">
@@ -489,7 +542,7 @@
                         )}
                     </main>
                     
-                    {/* 하단 푸터 추가 (문구 수정됨) */}
+                    {/* 하단 푸터 */}
                     <div className="pb-6 text-center bg-white">
                         <div className="flex justify-center items-center gap-2 mb-1">
                             <div className="h-px w-8 bg-gray-200"></div>
@@ -501,7 +554,7 @@
                         <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
 
-                    {showUpload && <UploadModal categories={CATEGORIES} onClose={()=>setShowUpload(false)} />}
+                    {showUpload && <UploadModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
                 </div>
             );
         };
