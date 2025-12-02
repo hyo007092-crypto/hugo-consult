@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- [중요] 번역기 자동 실행 원천 차단 -->
+    <!-- 번역기 차단 -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -12,28 +12,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
-
-    <!-- [필살기] 브라우저 번역기 충돌 방지 스크립트 (가장 먼저 실행) -->
-    <script>
-        if (typeof Node === 'function' && Node.prototype) {
-            const originalRemoveChild = Node.prototype.removeChild;
-            Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) {
-                    // 번역기가 돔을 건드려서 에러가 날 경우 무시하고 넘어감
-                    return child;
-                }
-                return originalRemoveChild.apply(this, arguments);
-            }
-            
-            const originalInsertBefore = Node.prototype.insertBefore;
-            Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) {
-                    return newNode;
-                }
-                return originalInsertBefore.apply(this, arguments);
-            }
-        }
-    </script>
 
     <style>
         /* 폰트 설정 */
@@ -48,8 +26,7 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
         
-        /* 고급스러운 화이트 테마 */
-        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; }
+        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
         
         .loader { border: 3px solid #E5E7EB; border-top: 3px solid #D4AF37; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -76,6 +53,22 @@
 </head>
 <body class="notranslate font-sans antialiased">
 
+    <!-- 번역기 충돌 방지 -->
+    <script>
+        if (typeof Node === 'function' && Node.prototype) {
+            const originalRemoveChild = Node.prototype.removeChild;
+            Node.prototype.removeChild = function(child) {
+                if (child.parentNode !== this) return child;
+                return originalRemoveChild.apply(this, arguments);
+            }
+            const originalInsertBefore = Node.prototype.insertBefore;
+            Node.prototype.insertBefore = function(newNode, referenceNode) {
+                if (referenceNode && referenceNode.parentNode !== this) return newNode;
+                return originalInsertBefore.apply(this, arguments);
+            }
+        }
+    </script>
+
     <div id="root">
         <div class="min-h-screen flex items-center justify-center bg-white">
             <div class="text-center">
@@ -85,12 +78,11 @@
         </div>
     </div>
 
-    <!-- 파이어베이스 연결 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
+        // ▼▼▼ 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -107,7 +99,6 @@
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
-    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
@@ -140,7 +131,6 @@
             { id: 'petit', name: '필러&보톡스', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
-        // 이미지 압축 함수
         const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -249,7 +239,7 @@
             );
         };
 
-        // 통합 케이스 모달 (등록 + 수정) - 수정 기능 포함됨
+        // 통합 모달 (수정/등록)
         const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ 
@@ -260,7 +250,6 @@
                 sideBefore: null, sideAfter: null 
             });
 
-            // [수정] 초기 데이터 로드 (수정 시에만 작동)
             useEffect(() => {
                 if (initialData) {
                     setData({
@@ -275,18 +264,9 @@
                         sideBefore: initialData.images?.side?.before || null,
                         sideAfter: initialData.images?.side?.after || null,
                     });
-                } else {
-                    // 추가 모드일 때 초기화
-                    setData({ 
-                        categoryId: categories[0].id, 
-                        patientId: '', desc: '', tags: '', 
-                        frontBefore: null, frontAfter: null, 
-                        angleBefore: null, angleAfter: null, 
-                        sideBefore: null, sideAfter: null 
-                    });
                 }
-            }, [initialData, categories]);
-
+            }, [initialData]);
+            
             const handleFile = async (e, key) => {
                 if(e.target.files[0]) {
                     const compressed = await compressImage(e.target.files[0]);
@@ -301,7 +281,6 @@
                 setUploading(true);
                 try {
                     const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
-                    
                     const docData = {
                         categoryId: data.categoryId,
                         patientId: data.patientId,
@@ -315,11 +294,9 @@
                     };
 
                     if (initialData) {
-                        // [수정] 기존 문서 업데이트
                         await updateDoc(doc(window.db, "cases", initialData.id), docData);
                         alert("수정 완료!");
                     } else {
-                        // [신규] 새 문서 생성
                         docData.createdAt = serverTimestamp();
                         await addDoc(collection(window.db, "cases"), docData);
                         alert("업로드 완료!");
@@ -337,11 +314,11 @@
                     <p className="text-xs font-bold text-teal-600 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-3">
                         <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyBefore] ? <img src={data[bindKeyBefore]} className="w-full h-full object-cover rounded-lg" /> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
+                            {data[bindKeyBefore] ? <Icons.Check className="text-teal-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(1080x1080 권장)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
                         </label>
                         <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                            {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover rounded-lg" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
+                            {data[bindKeyAfter] ? <Icons.Check className="text-gold-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(1080x1080 권장)</span>}
                             <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
                         </label>
                     </div>
@@ -417,19 +394,33 @@
                 if(window.lucide) window.lucide.createIcons();
             });
 
-            // 뒤로가기 처리
+            // 뒤로가기 처리 (앱 종료 방지)
             useEffect(() => {
                 const handlePopState = (event) => {
                     if (view === 'DETAIL') {
                         setView('LIST');
                     } else if (view === 'LIST') {
                         setView('DASHBOARD');
+                    } else if (view === 'DASHBOARD' && !isAdmin) {
+                        // 대시보드에서는 뒤로가기 시 아무 동작 안함 (또는 로그인 화면으로)
                     }
                 };
+
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
-                return () => window.removeEventListener('popstate', handlePopState);
+
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                };
+            }, [view, isAdmin]);
+
+            // 뷰 변경 시 히스토리 스택 관리
+            useEffect(() => {
+                 if (view !== 'LOGIN') {
+                     window.history.pushState(null, '', window.location.href);
+                 }
             }, [view]);
+
 
             useEffect(() => {
                 if(window.db && window.firestore) {
@@ -463,9 +454,7 @@
             };
 
             const CategoryIcon = ({ name, rotate }) => {
-                // 아이콘 이름 직접 사용 (카테고리에서 아이콘 제거 요청 시 여기를 수정하면 됨)
-                // 현재는 디자인 유지를 위해 텍스트 위주로 사용하되 아이콘 로직은 둠
-                return null; 
+                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
             };
 
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
@@ -526,8 +515,8 @@
                                             </div>
                                             {isAdmin && (
                                                 <div className="absolute top-2 right-2 flex gap-1">
-                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
-                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
+                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
+                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
                                                 </div>
                                             )}
                                         </div>
@@ -535,10 +524,9 @@
                                         <div className="col-span-2 text-center py-20">
                                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
                                             <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
-                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
-                                                이전 메뉴로 돌아가기
+                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors">
+                                                이전 화면으로 돌아가기
                                             </button>
-                                            {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
                                     )}
                                 </div>
