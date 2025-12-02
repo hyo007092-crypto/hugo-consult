@@ -159,6 +159,22 @@
             });
         };
 
+        // --- 하단 푸터 컴포넌트 (수정됨) ---
+        const Footer = () => {
+            return (
+                <div className="mt-8 mb-6 text-center space-y-1">
+                    <div className="flex justify-center items-center gap-2 mb-2">
+                        <div className="h-px w-6 bg-gray-200"></div>
+                        <span className="text-[10px] text-gray-400 font-bold tracking-widest">HUGO</span>
+                        <div className="h-px w-6 bg-gray-200"></div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                </div>
+            );
+        };
+
         const LoginScreen = ({ onLogin }) => {
             const [pin, setPin] = useState('');
             const [error, setError] = useState(false);
@@ -197,7 +213,9 @@
                             <div className="flex justify-center items-center"><button onClick={() => setPin(pin.slice(0, -1))} className="w-16 h-16 flex items-center justify-center text-gray-400 hover:text-gray-600"><Icons.ArrowLeft size={24} /></button></div>
                         </div>
                     </div>
-                    <div className="absolute bottom-8 text-gray-300 text-[10px] tracking-widest">PREMIUM AESTHETIC CONSULT</div>
+                    <div className="absolute bottom-8 w-full">
+                        <Footer />
+                    </div>
                 </div>
             );
         };
@@ -213,8 +231,7 @@
                 }
             };
             return (
-                // aspect-[1/1]로 변경하여 정사각형에 가까운 비율로 조정 (기존 4/5)
-                // object-cover 유지하여 여백 없이 꽉 채움
+                // 정사각형(1:1) 비율, 꽉 찬 화면(cover)
                 <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
                     {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
@@ -300,7 +317,7 @@
                             <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                         </div>
                         
-                        {/* 규격 안내 메시지 추가 */}
+                        {/* 규격 안내 추가 */}
                         <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
                             <span className="text-teal-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
                         </div>
@@ -471,6 +488,18 @@
                             </div>
                         )}
                     </main>
+                    
+                    {/* 하단 푸터 추가 (문구 수정됨) */}
+                    <div className="pb-6 text-center bg-white">
+                        <div className="flex justify-center items-center gap-2 mb-1">
+                            <div className="h-px w-8 bg-gray-200"></div>
+                            <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
+                            <div className="h-px w-8 bg-gray-200"></div>
+                        </div>
+                        <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                        <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                        <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                    </div>
 
                     {showUpload && <UploadModal categories={CATEGORIES} onClose={()=>setShowUpload(false)} />}
                 </div>
