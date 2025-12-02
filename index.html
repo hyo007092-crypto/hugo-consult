@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 번역기 차단 -->
+    <!-- [중요] 번역기 자동 실행 차단 -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -116,10 +116,10 @@
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
-            X: (props) => <IconWrapper name="x" {...props} />
+            X: (props) => <IconWrapper name="x" {...props} />,
+            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
         };
 
-        // 아이콘 제거 및 카테고리명/태그 수정 반영
         const CATEGORIES = [
             { id: 'lifting_face', name: '안면목거상', tags: ['전체', '미니거상', '목거상', '재수술'] },
             { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경', '축소병행'] },
@@ -143,7 +143,7 @@
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 1200; // 화질 개선을 위해 해상도 증가
+                        const MAX_WIDTH = 1200; 
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
@@ -209,12 +209,12 @@
                 }
             };
             return (
-                /* object-cover 적용하여 여백 제거 및 꽉 찬 화면 구현 */
+                // object-contain 적용: 사진 전체가 잘리지 않고 다 보임 (빈 공간은 회색)
                 <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
+                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-cover" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
                         <div className="absolute top-4 left-4 bg-teal-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.3)] z-30" style={{ left: `${sliderPosition}%` }}>
@@ -362,6 +362,12 @@
                 }
             };
 
+            const CategoryIcon = ({ name, rotate }) => {
+                // 메인 메뉴에서는 아이콘 대신 텍스트만 사용할 경우 아래 부분을 수정 가능
+                // 현재는 요청에 따라 텍스트 위주로 구성됨
+                return null; 
+            };
+
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
 
             const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
@@ -371,7 +377,6 @@
                     <header className="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 h-16 flex items-center justify-between px-5 shadow-sm">
                         {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-teal-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
                         
-                        {/* 헤더 로고/타이틀 */}
                         <div className="flex flex-col items-center">
                            <h2 className="font-serif text-lg font-bold text-teal-600 tracking-widest">
                                {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
@@ -392,8 +397,8 @@
                                 <div className="grid grid-cols-2 gap-4">
                                     {CATEGORIES.map((cat) => (
                                         <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
-                                            className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300">
-                                            <span className="text-sm font-bold text-gray-700">{cat.name}</span>
+                                            className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
+                                            <span className="text-base font-bold text-gray-700">{cat.name}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -423,6 +428,7 @@
                                         </div>
                                     )) : (
                                         <div className="col-span-2 text-center py-20">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
