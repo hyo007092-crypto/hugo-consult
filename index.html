@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- [중요] 번역기 자동 실행 차단 -->
+    <!-- 번역기 차단 -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -110,35 +110,27 @@
         };
 
         const Icons = {
-            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />,
             ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
-            Activity: (props) => <IconWrapper name="activity" {...props} />,
-            Layers: (props) => <IconWrapper name="layers" {...props} />,
-            User: (props) => <IconWrapper name="user" {...props} />,
-            Scissors: (props) => <IconWrapper name="scissors" {...props} />,
-            Sparkles: (props) => <IconWrapper name="sparkles" {...props} />,
-            Smile: (props) => <IconWrapper name="smile" {...props} />,
-            Syringe: (props) => <IconWrapper name="syringe" {...props} />,
-            Settings: (props) => <IconWrapper name="settings" {...props} />,
-            X: (props) => <IconWrapper name="x" {...props} />,
             Plus: (props) => <IconWrapper name="plus" {...props} />,
             Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
-            Check: (props) => <IconWrapper name="check" {...props} />
+            Check: (props) => <IconWrapper name="check" {...props} />,
+            X: (props) => <IconWrapper name="x" {...props} />
         };
 
+        // 아이콘 제거 및 카테고리명/태그 수정 반영
         const CATEGORIES = [
-            { id: 'lifting_face', name: '안면목거상', icon: 'ScanFace', tags: ['전체', '미니거상', '목거상', '재수술'] },
-            { id: 'lifting_forehead', name: '이마거상', icon: 'ArrowLeft', rotateIcon: 90, tags: ['전체', '내시경', '축소병행'] },
-            { id: 'eyes_middle', name: '중년눈성형', icon: 'Activity', tags: ['전체', '상안검', '하안검', '눈밑지방재배치'] },
-            { id: 'thread', name: '실리프팅', icon: 'Layers', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
-            { id: 'ears', name: '귀성형', icon: 'User', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
-            { id: 'nose', name: '코성형', icon: 'User', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
-            { id: 'lipo', name: '지방흡입', icon: 'Scissors', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
-            { id: 'fat_graft', name: '지방이식', icon: 'Sparkles', tags: ['전체', '풀페이스', '이마', '앞광대'] },
-            { id: 'philtrum', name: '인중축소(C컬)', icon: 'Smile', tags: ['전체', '내측', '외측', '입꼬리'] },
-            { id: 'petit', name: '필러&보톡스', icon: 'Syringe', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
+            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '미니거상', '목거상', '재수술'] },
+            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경', '축소병행'] },
+            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검', '눈밑지방재배치', '쌍꺼풀', '트임', '눈매교정'] },
+            { id: 'thread', name: '실리프팅', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
+            { id: 'ears', name: '귀성형', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
+            { id: 'nose', name: '코성형', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
+            { id: 'lipo', name: '지방흡입', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
+            { id: 'fat_graft', name: '지방이식', tags: ['전체', '풀페이스', '이마', '앞광대'] },
+            { id: 'philtrum', name: '인중축소(C컬)', tags: ['전체', '내측', '외측', '입꼬리'] },
+            { id: 'petit', name: '필러&보톡스', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
         // 이미지 압축 함수
@@ -151,13 +143,13 @@
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; 
+                        const MAX_WIDTH = 1200; // 화질 개선을 위해 해상도 증가
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
                     };
                 };
             });
@@ -181,7 +173,7 @@
                 <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
                     <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
                         <div className="text-center space-y-3">
-                            <img src="./logo.png" alt="HUGO" className="h-20 mx-auto object-contain mb-4" onError={(e) => e.target.style.display = 'none'} />
+                            <img src="./logo.png" alt="HUGO" className="h-24 mx-auto object-contain mb-4" onError={(e) => e.target.style.display = 'none'} />
                             <h1 className="text-3xl font-serif tracking-widest text-teal-600 font-bold" style={{display: 'var(--logo-display, block)'}}>HUGO</h1>
                             <p className="text-xs tracking-[0.4em] text-gray-400 uppercase font-medium">Plastic Surgery</p>
                         </div>
@@ -217,11 +209,12 @@
                 }
             };
             return (
+                /* object-cover 적용하여 여백 제거 및 꽉 찬 화면 구현 */
                 <div ref={containerRef} className="relative w-full aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-contain" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
+                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
                     <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-contain" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-cover" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
                         <div className="absolute top-4 left-4 bg-teal-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">Before</div>
                     </div>
                     <div className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.3)] z-30" style={{ left: `${sliderPosition}%` }}>
@@ -369,10 +362,6 @@
                 }
             };
 
-            const CategoryIcon = ({ name, rotate }) => {
-                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
-            };
-
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
 
             const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
@@ -404,10 +393,7 @@
                                     {CATEGORIES.map((cat) => (
                                         <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
                                             className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300">
-                                            <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 mb-1">
-                                                <CategoryIcon name={cat.icon} rotate={cat.rotateIcon}/>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-600">{cat.name}</span>
+                                            <span className="text-sm font-bold text-gray-700">{cat.name}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -420,7 +406,7 @@
                                     {selectedCategory.tags.map(tag => (
                                         <button key={tag} onClick={() => setSelectedTag(tag)} 
                                             className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-teal-600 border-teal-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-teal-300'}`}>
-                                            #{tag}
+                                            {tag}
                                         </button>
                                     ))}
                                 </div>
@@ -437,7 +423,6 @@
                                         </div>
                                     )) : (
                                         <div className="col-span-2 text-center py-20">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
