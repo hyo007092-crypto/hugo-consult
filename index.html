@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- [중요] 번역기 자동 실행 차단 -->
+    <!-- 번역기 차단 -->
     <meta name="google" content="notranslate">
     
     <title>Hugo Aesthetic Consult</title>
@@ -26,17 +26,10 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
         
-        /* 고급스러운 화이트 테마 */
-        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; }
+        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
         
         .loader { border: 3px solid #E5E7EB; border-top: 3px solid #D4AF37; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* 크롭퍼 스타일 */
-        .cropper-container { position: relative; width: 100%; height: 400px; background: #000; overflow: hidden; }
-        .cropper-image { max-width: 100%; max-height: 100%; display: block; margin: 0 auto; }
-        .cropper-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); pointer-events: none; }
-        .cropper-box { position: absolute; border: 2px solid white; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); cursor: move; }
     </style>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -60,22 +53,17 @@
 </head>
 <body class="notranslate font-sans antialiased">
 
-    <!-- [필살기] 브라우저 번역기 충돌 방지 코드 -->
+    <!-- 번역기 충돌 방지 -->
     <script>
         if (typeof Node === 'function' && Node.prototype) {
             const originalRemoveChild = Node.prototype.removeChild;
             Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) {
-                    return child;
-                }
+                if (child.parentNode !== this) return child;
                 return originalRemoveChild.apply(this, arguments);
             }
-            
             const originalInsertBefore = Node.prototype.insertBefore;
             Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) {
-                    return newNode;
-                }
+                if (referenceNode && referenceNode.parentNode !== this) return newNode;
                 return originalInsertBefore.apply(this, arguments);
             }
         }
@@ -90,12 +78,11 @@
         </div>
     </div>
 
-    <!-- 파이어베이스 연결 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
+        // ▼▼▼ 파이어베이스 설정 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
             authDomain: "hugo-consult.firebaseapp.com",
@@ -112,7 +99,6 @@
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
-    <!-- 리액트 앱 로직 -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
@@ -129,7 +115,7 @@
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
             X: (props) => <IconWrapper name="x" {...props} />,
-            Crop: (props) => <IconWrapper name="crop" {...props} /> // 자르기 아이콘
+            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
         };
 
         const CATEGORIES = [
@@ -165,118 +151,6 @@
                     };
                 };
             });
-        };
-
-        // --- 자르기(Crop) 컴포넌트 ---
-        const ImageCropper = ({ imageSrc, onCrop, onCancel }) => {
-            const imgRef = useRef(null);
-            const [crop, setCrop] = useState({ x: 0, y: 0, width: 100, height: 100 });
-            const [isDragging, setIsDragging] = useState(false);
-            const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-
-            // 이미지 로드 시 초기 크롭 박스 설정 (중앙 정렬)
-            useEffect(() => {
-                if (imgRef.current) {
-                    const size = Math.min(imgRef.current.width, imgRef.current.height) * 0.8;
-                    setCrop({
-                        x: (imgRef.current.width - size) / 2,
-                        y: (imgRef.current.height - size) / 2,
-                        width: size,
-                        height: size
-                    });
-                }
-            }, [imageSrc]);
-
-            const handleMouseDown = (e) => {
-                setIsDragging(true);
-                setStartPos({ 
-                    x: (e.clientX || e.touches[0].clientX) - crop.x, 
-                    y: (e.clientY || e.touches[0].clientY) - crop.y 
-                });
-            };
-
-            const handleMouseMove = (e) => {
-                if (!isDragging) return;
-                const clientX = e.clientX || e.touches[0].clientX;
-                const clientY = e.clientY || e.touches[0].clientY;
-                
-                let newX = clientX - startPos.x;
-                let newY = clientY - startPos.y;
-
-                // 경계 제한
-                if (imgRef.current) {
-                    newX = Math.max(0, Math.min(newX, imgRef.current.width - crop.width));
-                    newY = Math.max(0, Math.min(newY, imgRef.current.height - crop.height));
-                }
-
-                setCrop(prev => ({ ...prev, x: newX, y: newY }));
-            };
-
-            const handleMouseUp = () => setIsDragging(false);
-
-            const handleCrop = () => {
-                const canvas = document.createElement('canvas');
-                const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-                const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-                
-                canvas.width = crop.width * scaleX;
-                canvas.height = crop.height * scaleY;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(
-                    imgRef.current,
-                    crop.x * scaleX,
-                    crop.y * scaleY,
-                    crop.width * scaleX,
-                    crop.height * scaleY,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-                
-                onCrop(canvas.toDataURL('image/jpeg'));
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black z-[70] flex flex-col items-center justify-center p-4" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}>
-                    <div className="relative bg-black max-h-[70vh] overflow-hidden">
-                        <img ref={imgRef} src={imageSrc} className="max-w-full max-h-[60vh] object-contain pointer-events-none" onLoad={() => {
-                             // 이미지 로드 후 크롭 박스 초기화 (비동기 처리)
-                             const img = imgRef.current;
-                             const size = Math.min(img.width, img.height) * 0.8;
-                             setCrop({ x: (img.width - size)/2, y: (img.height - size)/2, width: size, height: size });
-                        }}/>
-                        
-                        {/* 크롭 박스 (1:1 비율 고정) */}
-                        <div 
-                            className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.7)]"
-                            style={{ 
-                                left: crop.x, 
-                                top: crop.y, 
-                                width: crop.width, 
-                                height: crop.height,
-                                cursor: 'move'
-                            }}
-                            onMouseDown={handleMouseDown}
-                            onTouchStart={handleMouseDown}
-                        >
-                            {/* 가이드라인 */}
-                            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
-                                <div className="border-r border-b border-white/30"></div><div className="border-r border-b border-white/30"></div><div className="border-b border-white/30"></div>
-                                <div className="border-r border-b border-white/30"></div><div className="border-r border-b border-white/30"></div><div className="border-b border-white/30"></div>
-                                <div className="border-r border-white/30"></div><div className="border-r border-white/30"></div><div></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="w-full max-w-sm mt-4 flex gap-3">
-                        <button onClick={onCancel} className="flex-1 py-3 bg-gray-700 text-white rounded-lg font-medium">취소</button>
-                        <button onClick={handleCrop} className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-bold">자르기 완료</button>
-                    </div>
-                    <p className="text-white/70 text-xs mt-2">박스를 드래그해서 위치를 조정하세요 (1:1 비율 고정)</p>
-                </div>
-            );
         };
 
         // --- 하단 푸터 컴포넌트 ---
@@ -379,9 +253,6 @@
                 sideBefore: null, sideAfter: null 
             });
 
-            // 자르기 관련 상태
-            const [croppingImage, setCroppingImage] = useState(null); // { key: 'frontBefore', src: 'base64...' }
-
             useEffect(() => {
                 if (initialData) {
                     setData({
@@ -399,22 +270,10 @@
                 }
             }, [initialData]);
             
-            // 파일 선택 -> 크롭 모드 진입
-            const handleFileSelect = (e, key) => {
+            const handleFile = async (e, key) => {
                 if(e.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        setCroppingImage({ key, src: e.target.result });
-                    };
-                    reader.readAsDataURL(e.target.files[0]);
-                }
-            };
-
-            // 크롭 완료 -> 데이터 저장
-            const handleCropComplete = (croppedImgSrc) => {
-                if (croppingImage) {
-                    setData(prev => ({ ...prev, [croppingImage.key]: croppedImgSrc }));
-                    setCroppingImage(null);
+                    const compressed = await compressImage(e.target.files[0]);
+                    setData(prev => ({...prev, [key]: compressed}));
                 }
             };
 
@@ -457,90 +316,69 @@
                 <div className="space-y-2">
                     <p className="text-xs font-bold text-teal-600 ml-1">{label}</p>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="relative">
-                            <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                                {data[bindKeyBefore] ? <img src={data[bindKeyBefore]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
-                                <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyBefore)}/>
-                            </label>
-                             {data[bindKeyBefore] && (
-                                <button onClick={()=>setCroppingImage({key: bindKeyBefore, src: data[bindKeyBefore]})} className="absolute bottom-1 right-1 bg-black/50 p-1 rounded text-white"><Icons.Crop size={12}/></button>
-                            )}
-                        </div>
-
-                        <div className="relative">
-                            <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                                {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
-                                <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyAfter)}/>
-                            </label>
-                             {data[bindKeyAfter] && (
-                                <button onClick={()=>setCroppingImage({key: bindKeyAfter, src: data[bindKeyAfter]})} className="absolute bottom-1 right-1 bg-black/50 p-1 rounded text-white"><Icons.Crop size={12}/></button>
-                            )}
-                        </div>
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-teal-50 border-teal-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyBefore] ? <Icons.Check className="text-teal-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
+                        </label>
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyAfter] ? <Icons.Check className="text-gold-600" size={20}/> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
+                        </label>
                     </div>
                 </div>
             );
 
             return (
-                <>
-                    {croppingImage && (
-                        <ImageCropper 
-                            imageSrc={croppingImage.src} 
-                            onCrop={handleCropComplete} 
-                            onCancel={() => setCroppingImage(null)} 
-                        />
-                    )}
-
-                    <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center ${croppingImage ? 'hidden' : ''}`}>
-                        <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-                                <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
-                                <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
-                            </div>
-                            
-                            <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                                <span className="text-teal-600 font-bold">TIP</span> 사진 클릭 후 '자르기' 버튼으로 편집 가능 (1:1 비율)
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
-                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
-                                        value={data.categoryId}
-                                        onChange={e=>setData({...data, categoryId: e.target.value})}>
-                                        {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
-                                    <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
-                                        value={data.patientId}
-                                        onChange={e=>setData({...data, patientId: e.target.value})}/>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
-                                    value={data.desc}
-                                    onChange={e=>setData({...data, desc: e.target.value})}/>
-                            </div>
-                            <div>
-                                 <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
-                                    value={data.tags}
-                                    onChange={e=>setData({...data, tags: e.target.value})}/>
-                            </div>
-                            
-                            <div className="space-y-4 pt-2 border-t border-gray-100">
-                                <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                                <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                                <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
-                            </div>
-                            <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
-                                {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
-                            </button>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+                            <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                         </div>
+                        
+                        <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
+                            <span className="text-teal-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
+                                <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
+                                    value={data.categoryId}
+                                    onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                    {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
+                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
+                                    value={data.patientId}
+                                    onChange={e=>setData({...data, patientId: e.target.value})}/>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
+                                value={data.desc}
+                                onChange={e=>setData({...data, desc: e.target.value})}/>
+                        </div>
+                        <div>
+                             <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
+                                value={data.tags}
+                                onChange={e=>setData({...data, tags: e.target.value})}/>
+                        </div>
+                        
+                        <div className="space-y-4 pt-2 border-t border-gray-100">
+                            <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                            <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                            <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                        </div>
+                        <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
+                            {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
+                        </button>
                     </div>
-                </>
+                </div>
             );
         };
 
@@ -559,26 +397,33 @@
                 if(window.lucide) window.lucide.createIcons();
             });
 
-            // 뒤로가기 처리
+            // 뒤로가기 처리 (앱 종료 방지 및 이전 화면 이동)
             useEffect(() => {
                 const handlePopState = (event) => {
                     if (view === 'DETAIL') {
                         setView('LIST');
                     } else if (view === 'LIST') {
                         setView('DASHBOARD');
+                    } else if (view === 'DASHBOARD' && !isAdmin) {
+                        // 대시보드에서는 뒤로가기 시 아무 동작 안함 (브라우저 종료 방지용)
                     }
                 };
+
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
-                return () => window.removeEventListener('popstate', handlePopState);
-            }, [view]);
 
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                };
+            }, [view, isAdmin]);
+
+            // 뷰 변경 시 히스토리 스택 관리
             useEffect(() => {
                  if (view !== 'LOGIN') {
-                     window.history.pushState(null, '', window.location.href);
+                     // 상태를 푸시하지 않고 현재 상태를 교체하거나 관리 (중복 푸시 방지)
+                     // window.history.pushState(null, '', window.location.href); // 이 줄 삭제하여 중복 방지
                  }
             }, [view]);
-
 
             useEffect(() => {
                 if(window.db && window.firestore) {
@@ -673,8 +518,8 @@
                                             </div>
                                             {isAdmin && (
                                                 <div className="absolute top-2 right-2 flex gap-1">
-                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
-                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
+                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
+                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
                                                 </div>
                                             )}
                                         </div>
@@ -682,9 +527,10 @@
                                         <div className="col-span-2 text-center py-20">
                                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
                                             <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
-                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors">
-                                                이전 화면으로 돌아가기
+                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
+                                                이전 메뉴로 돌아가기
                                             </button>
+                                            {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
                                     )}
                                 </div>
@@ -728,7 +574,7 @@
                         <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
 
-                    {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
+                    {showUpload && <UploadModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
                 </div>
             );
         };
