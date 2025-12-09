@@ -126,26 +126,25 @@
             ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
             Plus: (props) => <IconWrapper name="plus" {...props} />,
             Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
-            Edit2: (props) => <IconWrapper name="edit-2" {...props} />, // 수정 아이콘
+            Edit2: (props) => <IconWrapper name="edit-2" {...props} />,
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
             X: (props) => <IconWrapper name="x" {...props} />,
-            Crop: (props) => <IconWrapper name="crop" {...props} />
+            Crop: (props) => <IconWrapper name="crop" {...props} />,
+            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
         };
 
         // 카테고리 (수정된 버전)
         const CATEGORIES = [
-            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '미니거상', '목거상', '재수술'] },
-            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경', '축소병행'] },
-            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검', '눈밑지방재배치', '쌍꺼풀', '트임', '눈매교정'] },
-            { id: 'thread', name: '실리프팅', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
-            { id: 'ears', name: '귀성형', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
-            { id: 'nose', name: '코성형', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
-            { id: 'lipo', name: '지방흡입', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
-            { id: 'fat_graft', name: '지방이식', tags: ['전체', '풀페이스', '이마', '앞광대'] },
-            { id: 'philtrum', name: '인중축소(C컬)', tags: ['전체', '내측', '외측', '입꼬리'] },
-            { id: 'petit', name: '필러&보톡스', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
+            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '안면거상', '안면목거상', 'S미니거상'] },
+            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경 이마거상', '이마축소거상'] },
+            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검 (+피치거상)', '눈밑지방재배치', '쌍꺼풀', '눈매교정', '트임'] },
+            { id: 'nose', name: '코성형', tags: ['전체', '콧대', '코끝', '콧볼축소', '재수술'] },
+            { id: 'ears', name: '귀성형', tags: ['전체', '누운귀', '접힌귀', '칼귀'] },
+            { id: 'thread', name: '실리프팅', tags: ['전체', '민트실', '블루로즈', '실루엣소프트'] },
+            { id: 'lipo', name: '지방흡입', tags: ['전체', '얼굴', '팔', '복부', '허벅지'] },
+            { id: 'fat_graft', name: '지방이식', tags: ['전체', '얼굴'] }
         ];
 
         // 이미지 압축 함수
@@ -269,18 +268,13 @@
             );
         };
 
-        // --- 하단 푸터 (수정됨) ---
+        // --- 하단 푸터 (수정됨: 이미지 내용 반영 및 간격 조정) ---
         const Footer = () => {
             return (
-                <div className="mt-8 mb-6 text-center space-y-1">
-                    <div className="flex justify-center items-center gap-2 mb-2">
-                        <div className="h-px w-6 bg-gray-200"></div>
-                        <span className="text-[10px] text-gray-400 font-bold tracking-widest">HUGO</span>
-                        <div className="h-px w-6 bg-gray-200"></div>
-                    </div>
-                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
-                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
-                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                <div className="mt-10 mb-8 text-center">
+                    <p className="text-[11px] text-brand-600/70 font-bold tracking-widest mb-2">HUGO PLASTIC SURGERY</p>
+                    <p className="text-[11px] text-gray-400 font-medium mb-1.5">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                    <p className="text-[10px] text-gray-300">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                 </div>
             );
         };
@@ -377,13 +371,13 @@
             // 자르기 관련 상태
             const [croppingImage, setCroppingImage] = useState(null);
 
-            // 수정 모드일 경우 초기 데이터 세팅
+            // 수정 모드일 경우 초기 데이터 세팅 (안전장치 추가)
             useEffect(() => {
                 if (initialData) {
                     setData({
-                        categoryId: initialData.categoryId,
-                        patientId: initialData.patientId,
-                        desc: initialData.description,
+                        categoryId: initialData.categoryId || categories[0].id,
+                        patientId: initialData.patientId || '',
+                        desc: initialData.description || '',
                         tags: initialData.tags ? initialData.tags.join(', ') : '',
                         frontBefore: initialData.images?.front?.before || null,
                         frontAfter: initialData.images?.front?.after || null,
@@ -495,7 +489,7 @@
                             </div>
                             
                             <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                                <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
+                                <span className="text-brand-600 font-bold">TIP</span> 권장 사이즈: 1080x1080 (1:1 비율)
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -563,16 +557,13 @@
                         setView('LIST');
                     } else if (view === 'LIST') {
                         setView('DASHBOARD');
-                    } else if (view === 'DASHBOARD' && !isAdmin) {
-                        // 대시보드에서는 뒤로가기 시 아무 동작 안함 (브라우저 종료 방지용)
                     }
                 };
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
                 return () => window.removeEventListener('popstate', handlePopState);
-            }, [view, isAdmin]);
+            }, [view]);
 
-            // 뷰 변경 시 히스토리 스택 관리
             useEffect(() => {
                  if (view !== 'LOGIN') {
                      window.history.pushState(null, '', window.location.href);
@@ -665,7 +656,7 @@
                                 <div className="grid grid-cols-2 gap-4">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
-                                            <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                                             <div className="absolute bottom-3 left-3 right-3">
                                                 <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
@@ -673,7 +664,7 @@
                                             </div>
                                             {isAdmin && (
                                                 <div className="absolute top-2 right-2 flex gap-1">
-                                                    {/* 수정/삭제 버튼 (크기 축소 및 아이콘 변경) */}
+                                                    {/* 수정/삭제 버튼 */}
                                                     <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
                                                     <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
                                                 </div>
@@ -705,12 +696,12 @@
                                 </div>
                                 <div className="flex-1 flex flex-col justify-center min-h-0">
                                     <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
-                                        <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
+                                        <CompareSlider beforeImage={selectedCase.images?.[caseViewType]?.before} afterImage={selectedCase.images?.[caseViewType]?.after} />
                                     </div>
                                     <div className="mt-8 space-y-3 px-2">
                                         <div className="flex items-center justify-between">
                                             <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
-                                            <div className="flex gap-1">{selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
+                                            <div className="flex gap-1">{selectedCase.tags && selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
                                         </div>
                                         <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
                                     </div>
