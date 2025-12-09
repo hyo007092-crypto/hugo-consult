@@ -1,14 +1,363 @@
-return (
-            <>
-                {croppingImage && (
-                    <ImageCropper 
-                        imageSrc={croppingImage.src} 
-                        onCrop={handleCropComplete} 
-                        onCancel={() => setCroppingImage(null)} 
-                    />
-                )}
+<!DOCTYPE html>
+<html lang="ko" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- [중요] 번역기 자동 실행 원천 차단 (검은 화면 방지) -->
+    <meta name="google" content="notranslate">
+    
+    <title>Hugo Aesthetic Consult</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
 
-                <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center ${croppingImage ? 'hidden' : ''}`}>
+    <style>
+        /* 폰트 설정 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+        
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .font-sans { font-family: 'Noto Sans KR', sans-serif; }
+        
+        /* 스크롤바 숨김 */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 애니메이션 */
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        
+        /* 전체 스타일 */
+        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
+        
+        /* 로딩 스피너 */
+        .loader { border: 3px solid #E5E7EB; border-top: 3px solid #00796B; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // 휴고 성형외과 전용 그린 테마
+                        brand: {
+                            50: '#E0F2F1',
+                            100: '#B2DFDB',
+                            400: '#26A69A',
+                            500: '#009688', 
+                            600: '#00796B', 
+                            700: '#004D40',
+                        },
+                        gold: { 400: '#FACC15', 500: '#EAB308' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="notranslate font-sans antialiased">
+
+    <!-- [핵심] 브라우저 번역기 충돌 방지 코드 (Monkey Patch) -->
+    <script>
+        if (typeof Node === 'function' && Node.prototype) {
+            const originalRemoveChild = Node.prototype.removeChild;
+            Node.prototype.removeChild = function(child) {
+                if (child.parentNode !== this) {
+                    return child;
+                }
+                return originalRemoveChild.apply(this, arguments);
+            }
+            
+            const originalInsertBefore = Node.prototype.insertBefore;
+            Node.prototype.insertBefore = function(newNode, referenceNode) {
+                if (referenceNode && referenceNode.parentNode !== this) {
+                    return newNode;
+                }
+                return originalInsertBefore.apply(this, arguments);
+            }
+        }
+    </script>
+
+    <div id="root">
+        <div class="min-h-screen flex items-center justify-center bg-white">
+            <div class="text-center">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-gray-400 text-sm tracking-widest">HUGO PLASTIC SURGERY</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 파이어베이스 연결 설정 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ▼▼▼ Firebase Config ▼▼▼
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
+            authDomain: "hugo-consult.firebaseapp.com",
+            projectId: "hugo-consult",
+            storageBucket: "hugo-consult.firebasestorage.app",
+            messagingSenderId: "445939856276",
+            appId: "1:445939856276:web:a0d00cad2f1ca756d05581"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
+    </script>
+
+    <!-- 리액트 앱 로직 -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        const IconWrapper = ({ name, className, ...props }) => {
+            return <i data-lucide={name} className={className} {...props}></i>;
+        };
+
+        const Icons = {
+            ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
+            Plus: (props) => <IconWrapper name="plus" {...props} />,
+            Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
+            Edit2: (props) => <IconWrapper name="edit-2" {...props} />,
+            Monitor: (props) => <IconWrapper name="monitor" {...props} />,
+            Upload: (props) => <IconWrapper name="upload" {...props} />,
+            Check: (props) => <IconWrapper name="check" {...props} />,
+            X: (props) => <IconWrapper name="x" {...props} />,
+            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
+        };
+
+        // 카테고리 목록
+        const CATEGORIES = [
+            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '미니거상', '목거상', '재수술'] },
+            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경', '축소병행'] },
+            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검', '눈밑지방재배치', '쌍꺼풀', '트임', '눈매교정'] },
+            { id: 'thread', name: '실리프팅', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
+            { id: 'ears', name: '귀성형', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
+            { id: 'nose', name: '코성형', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
+            { id: 'lipo', name: '지방흡입', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
+            { id: 'fat_graft', name: '지방이식', tags: ['전체', '풀페이스', '이마', '앞광대'] },
+            { id: 'philtrum', name: '인중축소(C컬)', tags: ['전체', '내측', '외측', '입꼬리'] },
+            { id: 'petit', name: '필러&보톡스', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
+        ];
+
+        // 이미지 압축 함수
+        const compressImage = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+                    };
+                };
+            });
+        };
+
+        // --- 하단 푸터 ---
+        const Footer = () => {
+            return (
+                <div className="mt-8 mb-6 text-center space-y-1">
+                    <div className="flex justify-center items-center gap-2 mb-2">
+                        <div className="h-px w-6 bg-gray-200"></div>
+                        <span className="text-[10px] text-gray-400 font-bold tracking-widest">HUGO</span>
+                        <div className="h-px w-6 bg-gray-200"></div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                </div>
+            );
+        };
+
+        const LoginScreen = ({ onLogin }) => {
+            const [pin, setPin] = useState('');
+            const [error, setError] = useState(false);
+            const [hasLogo, setHasLogo] = useState(true);
+
+            const handleNumClick = (num) => {
+                if (pin.length < 4) {
+                    const newPin = pin + num;
+                    setPin(newPin);
+                    if (newPin.length === 4) {
+                        if (newPin === '0000') setTimeout(() => onLogin(false), 300);
+                        else if (newPin === '9999') setTimeout(() => onLogin(true), 300);
+                        else { setError(true); setTimeout(() => { setPin(''); setError(false); }, 1000); }
+                    }
+                }
+            };
+            return (
+                <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                    <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
+                        <div className="text-center space-y-3">
+                            <img src="./logo.png" alt="HUGO" className="h-20 mx-auto object-contain mb-2" 
+                                onError={(e) => { e.target.style.display = 'none'; setHasLogo(false); }} 
+                            />
+                            {!hasLogo && (
+                                <h1 className="text-4xl font-serif tracking-widest text-brand-600 font-bold mb-1">HUGO</h1>
+                            )}
+                            <p className="text-sm tracking-[0.3em] text-brand-600 font-bold font-serif mt-2 uppercase">Plastic Surgery</p>
+                        </div>
+                        <div className="flex space-x-4 mb-4">
+                            {[0, 1, 2, 3].map((i) => <div key={i} className={`w-3 h-3 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-brand-600 scale-110' : 'bg-gray-200'}`} />)}
+                        </div>
+                        {error && <p className="text-red-500 text-sm absolute top-1/2 mt-[-50px] font-medium animate-pulse">PIN 번호를 확인해주세요</p>}
+                        <div className="grid grid-cols-3 gap-5 w-full px-6">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                                <button key={num} onClick={() => handleNumClick(num.toString())} 
+                                    className="w-16 h-16 rounded-full text-2xl font-light text-gray-600 bg-white shadow-sm border border-gray-100 active:bg-gray-50 active:scale-95 transition-all mx-auto flex items-center justify-center">
+                                    {num}
+                                </button>
+                            ))}
+                            <div className="flex justify-center items-center"><button onClick={() => setPin('')} className="text-xs text-gray-400 hover:text-brand-600 transition-colors">전체취소</button></div>
+                            <button onClick={() => handleNumClick('0')} className="w-16 h-16 rounded-full text-2xl font-light text-gray-600 bg-white shadow-sm border border-gray-100 active:bg-gray-50 active:scale-95 transition-all mx-auto flex items-center justify-center">0</button>
+                            <div className="flex justify-center items-center"><button onClick={() => setPin(pin.slice(0, -1))} className="w-16 h-16 flex items-center justify-center text-gray-400 hover:text-gray-600"><Icons.ArrowLeft size={24} /></button></div>
+                        </div>
+                    </div>
+                    <div className="absolute bottom-8 w-full">
+                        <Footer />
+                    </div>
+                </div>
+            );
+        };
+
+        const CompareSlider = ({ beforeImage, afterImage }) => {
+            const [sliderPosition, setSliderPosition] = useState(50);
+            const containerRef = useRef(null);
+            const handleMove = (e) => {
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    setSliderPosition(Math.max(0, Math.min(100, (x / rect.width) * 100)));
+                }
+            };
+            return (
+                <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
+                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
+                    <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
+                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-cover" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
+                        <div className="absolute top-4 left-4 bg-brand-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">Before</div>
+                    </div>
+                    <div className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.3)] z-30" style={{ left: `${sliderPosition}%` }}>
+                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 bg-white rounded-full border border-gray-200 shadow-lg flex items-center justify-center text-brand-600">
+                            <div className="flex gap-0.5 h-3"><div className="w-0.5 bg-gray-300"></div><div className="w-0.5 bg-gray-300"></div></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 통합 케이스 모달 (등록 + 수정 기능 포함)
+        const CaseModal = ({ onClose, categories, initialData = null }) => {
+            const [uploading, setUploading] = useState(false);
+            const [data, setData] = useState({ 
+                categoryId: categories[0].id, 
+                patientId: '', desc: '', tags: '', 
+                frontBefore: null, frontAfter: null, 
+                angleBefore: null, angleAfter: null, 
+                sideBefore: null, sideAfter: null 
+            });
+
+            // 수정 모드일 경우 데이터 로드
+            useEffect(() => {
+                if (initialData) {
+                    setData({
+                        categoryId: initialData.categoryId || categories[0].id,
+                        patientId: initialData.patientId || '',
+                        desc: initialData.description || '',
+                        tags: initialData.tags ? initialData.tags.join(', ') : '',
+                        frontBefore: initialData.images?.front?.before || null,
+                        frontAfter: initialData.images?.front?.after || null,
+                        angleBefore: initialData.images?.angle45?.before || null,
+                        angleAfter: initialData.images?.angle45?.after || null,
+                        sideBefore: initialData.images?.side?.before || null,
+                        sideAfter: initialData.images?.side?.after || null,
+                    });
+                }
+            }, [initialData]);
+
+            const handleFile = async (e, key) => {
+                if(e.target.files[0]) {
+                    const compressed = await compressImage(e.target.files[0]);
+                    setData(prev => ({...prev, [key]: compressed}));
+                }
+            };
+
+            const handleSave = async () => {
+                if(!window.db) return alert("서버 연결 실패");
+                if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
+                
+                setUploading(true);
+                try {
+                    const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
+                    const docData = {
+                        categoryId: data.categoryId,
+                        patientId: data.patientId,
+                        description: data.desc,
+                        tags: data.tags.split(',').map(t=>t.trim()).filter(t=>t),
+                        images: { 
+                            front: { before: data.frontBefore, after: data.frontAfter },
+                            angle45: { before: data.angleBefore, after: data.angleAfter },
+                            side: { before: data.sideBefore, after: data.sideAfter }
+                        }
+                    };
+
+                    if (initialData) {
+                        // 수정 로직
+                        await updateDoc(doc(window.db, "cases", initialData.id), docData);
+                        alert("수정 완료!");
+                    } else {
+                        // 생성 로직
+                        docData.createdAt = serverTimestamp();
+                        await addDoc(collection(window.db, "cases"), docData);
+                        alert("업로드 완료!");
+                    }
+                    onClose();
+                } catch(e) {
+                    alert("실패: " + e.message);
+                } finally {
+                    setUploading(false);
+                }
+            };
+
+            const FileInput = ({ label, bindKeyBefore, bindKeyAfter }) => (
+                <div className="space-y-2">
+                    <p className="text-xs font-bold text-brand-600 ml-1">{label}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyBefore] ? 'bg-brand-600/10 border-brand-600' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyBefore] ? <img src={data[bindKeyBefore]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyBefore)}/>
+                        </label>
+                        <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
+                            {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
+                            <input type="file" hidden accept="image/*" onChange={e=>handleFile(e, bindKeyAfter)}/>
+                        </label>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                             <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
@@ -16,7 +365,7 @@ return (
                         </div>
                         
                         <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                            <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
+                            <span className="text-brand-600 font-bold">TIP</span> 권장 사이즈: 1080x1080 (1:1 비율)
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -58,208 +407,203 @@ return (
                         </button>
                     </div>
                 </div>
-            </>
-        );
-    };
+            );
+        };
 
-    const App = () => {
-        const [view, setView] = useState('LOGIN');
-        const [isAdmin, setIsAdmin] = useState(false);
-        const [cases, setCases] = useState([]);
-        const [selectedCategory, setSelectedCategory] = useState(null);
-        const [selectedTag, setSelectedTag] = useState('전체');
-        const [selectedCase, setSelectedCase] = useState(null);
-        const [caseViewType, setCaseViewType] = useState('front');
-        const [showUpload, setShowUpload] = useState(false);
-        const [editingCase, setEditingCase] = useState(null);
+        const App = () => {
+            const [view, setView] = useState('LOGIN');
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [cases, setCases] = useState([]);
+            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [selectedTag, setSelectedTag] = useState('전체');
+            const [selectedCase, setSelectedCase] = useState(null);
+            const [caseViewType, setCaseViewType] = useState('front');
+            const [showUpload, setShowUpload] = useState(false);
+            const [editingCase, setEditingCase] = useState(null);
 
-        useEffect(() => {
-            if(window.lucide) window.lucide.createIcons();
-        });
+            useEffect(() => {
+                if(window.lucide) window.lucide.createIcons();
+            });
 
-        useEffect(() => {
-            const handlePopState = (event) => {
-                if (view === 'DETAIL') {
-                    setView('LIST');
-                } else if (view === 'LIST') {
-                    setView('DASHBOARD');
+            // 뒤로가기 처리
+            useEffect(() => {
+                const handlePopState = (event) => {
+                    if (view === 'DETAIL') {
+                        setView('LIST');
+                    } else if (view === 'LIST') {
+                        setView('DASHBOARD');
+                    } else if (view === 'DASHBOARD' && !isAdmin) {
+                    }
+                };
+
+                window.history.pushState(null, '', window.location.href);
+                window.addEventListener('popstate', handlePopState);
+
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                };
+            }, [view, isAdmin]);
+
+            useEffect(() => {
+                 if (view !== 'LOGIN') {
+                     // 상태를 푸시하지 않고 관리 (중복 푸시 방지)
+                 }
+            }, [view]);
+
+            useEffect(() => {
+                if(window.db && window.firestore) {
+                    const { collection, onSnapshot, query, orderBy } = window.firestore;
+                    const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
+                    const unsub = onSnapshot(q, (snapshot) => {
+                        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setCases(list);
+                    }, (err) => console.log("DB Wait", err));
+                    return () => unsub();
+                }
+            }, [view]);
+
+            const handleDelete = async (e, id) => {
+                e.stopPropagation();
+                if(confirm("정말 삭제하시겠습니까?")) {
+                    const { deleteDoc, doc } = window.firestore;
+                    await deleteDoc(doc(window.db, "cases", id));
                 }
             };
-            window.history.pushState(null, '', window.location.href);
-            window.addEventListener('popstate', handlePopState);
-            return () => window.removeEventListener('popstate', handlePopState);
-        }, [view, isAdmin]);
 
-        useEffect(() => {
-             if (view !== 'LOGIN') {
-                 window.history.pushState(null, '', window.location.href);
-             }
-        }, [view]);
+            // 수정 버튼 핸들러
+            const handleEdit = (e, item) => {
+                e.stopPropagation();
+                setEditingCase(item); // 수정할 데이터 세팅
+                setShowUpload(true);  // 모달 열기
+            };
 
-        useEffect(() => {
-            if(window.db && window.firestore) {
-                const { collection, onSnapshot, query, orderBy } = window.firestore;
-                const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
-                const unsub = onSnapshot(q, (snapshot) => {
-                    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setCases(list);
-                }, (err) => console.log("DB Wait", err));
-                return () => unsub();
-            }
-        }, [view]);
+            const handleCloseModal = () => {
+                setShowUpload(false);
+                setEditingCase(null);
+            };
 
-        const handleDelete = async (e, id) => {
-            e.stopPropagation();
-            if(confirm("정말 삭제하시겠습니까?")) {
-                const { deleteDoc, doc } = window.firestore;
-                await deleteDoc(doc(window.db, "cases", id));
-            }
-        };
+            const CategoryIcon = ({ name, rotate }) => {
+                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
+            };
 
-        const handleEdit = (e, item) => {
-            e.stopPropagation();
-            setEditingCase(item);
-            setShowUpload(true);
-        };
+            if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
 
-        const handleCloseModal = () => {
-            setShowUpload(false);
-            setEditingCase(null);
-        };
+            const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
 
-        const handleLogout = async () => {
-            if(confirm("로그아웃 하시겠습니까?")) {
-                const { signOut } = window.firebaseAuth;
-                await signOut(window.auth);
-                setIsAdmin(false);
-                setView('LOGIN');
-            }
-        };
-
-        if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
-
-        const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
-
-        return (
-            <div className="bg-white min-h-screen text-gray-800 font-sans selection:bg-gold-100">
-                <header className="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 h-16 flex items-center justify-between px-5 shadow-sm">
-                    {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
-                    
-                    <div className="flex flex-col items-center">
-                       <h2 className="font-serif text-lg font-bold text-brand-600 tracking-widest">
-                           {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
-                       </h2>
-                    </div>
-
-                    {isAdmin ? (
-                        <div className="flex gap-2">
-                            <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button>
-                            <button onClick={handleLogout} className="p-2 -mr-2 text-gray-400 hover:text-red-500 transition-colors"><Icons.LogOut size={20}/></button>
+            return (
+                <div className="bg-white min-h-screen text-gray-800 font-sans selection:bg-gold-100">
+                    <header className="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 h-16 flex items-center justify-between px-5 shadow-sm">
+                        {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
+                        
+                        <div className="flex flex-col items-center">
+                           <h2 className="font-serif text-lg font-bold text-brand-600 tracking-widest">
+                               {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
+                           </h2>
                         </div>
-                    ) : <div className="w-6"/>}
-                </header>
 
-                <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
-                    {view === 'DASHBOARD' && (
-                        <div className="animate-fade-in">
-                            {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
-                            <div className="mb-8 text-center">
-                                <h3 className="text-2xl font-light text-gray-800 mb-1">Consultation</h3>
-                                <p className="text-xs text-gray-400 uppercase tracking-wider">Select Category</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                {CATEGORIES.map((cat) => (
-                                    <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
-                                        className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
-                                        <span className="text-base font-bold text-gray-700">{cat.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
+                    </header>
 
-                    {view === 'LIST' && (
-                        <div className="animate-fade-in">
-                            <div className="overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide flex gap-2 w-max mb-2">
-                                {selectedCategory.tags.map(tag => (
-                                    <button key={tag} onClick={() => setSelectedTag(tag)} 
-                                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-brand-600 border-brand-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-brand-300'}`}>
-                                        {tag}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                {filteredCases.length > 0 ? filteredCases.map(item => (
-                                    <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
-                                        <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                                        <div className="absolute bottom-3 left-3 right-3">
-                                            <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
-                                            <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
-                                        </div>
-                                        {isAdmin && (
-                                            <div className="absolute top-2 right-2 flex gap-1">
-                                                <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
-                                                <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )) : (
-                                    <div className="col-span-2 text-center py-20">
-                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.Upload size={32}/></div>
-                                        <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
-                                        <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
-                                            이전 메뉴로 돌아가기
+                    <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
+                        {view === 'DASHBOARD' && (
+                            <div className="animate-fade-in">
+                                {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
+                                <div className="mb-8 text-center">
+                                    <h3 className="text-2xl font-light text-gray-800 mb-1">Consultation</h3>
+                                    <p className="text-xs text-gray-400 uppercase tracking-wider">Select Category</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {CATEGORIES.map((cat) => (
+                                        <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
+                                            className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
+                                            <span className="text-base font-bold text-gray-700">{cat.name}</span>
                                         </button>
-                                        {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {view === 'DETAIL' && selectedCase && (
-                        <div className="animate-fade-in flex flex-col h-[calc(100vh-120px)]">
-                            <div className="flex bg-gray-100 p-1.5 rounded-xl mb-6 shrink-0 mx-auto w-full max-w-sm shadow-inner">
-                                {['front', 'angle45', 'side'].map((v) => (
-                                    <button key={v} onClick={() => setCaseViewType(v)} 
-                                        className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${caseViewType === v ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                                        {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="flex-1 flex flex-col justify-center min-h-0">
-                                <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
-                                    <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
+                        {view === 'LIST' && (
+                            <div className="animate-fade-in">
+                                <div className="overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide flex gap-2 w-max mb-2">
+                                    {selectedCategory.tags.map(tag => (
+                                        <button key={tag} onClick={() => setSelectedTag(tag)} 
+                                            className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-brand-600 border-brand-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-brand-300'}`}>
+                                            {tag}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="mt-8 space-y-3 px-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
-                                        <div className="flex gap-1">{selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {filteredCases.length > 0 ? filteredCases.map(item => (
+                                        <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
+                                            <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                            <div className="absolute bottom-3 left-3 right-3">
+                                                <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
+                                                <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
+                                            </div>
+                                            {isAdmin && (
+                                                <div className="absolute top-2 right-2 flex gap-1">
+                                                    {/* 수정/삭제 버튼 */}
+                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
+                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )) : (
+                                        <div className="col-span-2 text-center py-20">
+                                            <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
+                                            {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'DETAIL' && selectedCase && (
+                            <div className="animate-fade-in flex flex-col h-[calc(100vh-120px)]">
+                                <div className="flex bg-gray-100 p-1.5 rounded-xl mb-6 shrink-0 mx-auto w-full max-w-sm shadow-inner">
+                                    {['front', 'angle45', 'side'].map((v) => (
+                                        <button key={v} onClick={() => setCaseViewType(v)} 
+                                            className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${caseViewType === v ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                                            {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center min-h-0">
+                                    <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
+                                        <CompareSlider beforeImage={selectedCase.images?.[caseViewType]?.before} afterImage={selectedCase.images?.[caseViewType]?.after} />
                                     </div>
-                                    <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
+                                    <div className="mt-8 space-y-3 px-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
+                                            <div className="flex gap-1">{selectedCase.tags && selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
+                                        </div>
+                                        <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
+                                    </div>
                                 </div>
                             </div>
+                        )}
+                    </main>
+                    
+                    <div className="pb-6 text-center bg-white">
+                        <div className="flex justify-center items-center gap-2 mb-1">
+                            <div className="h-px w-8 bg-gray-200"></div>
+                            <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
+                            <div className="h-px w-8 bg-gray-200"></div>
                         </div>
-                    )}
-                </main>
-                
-                <div className="pb-6 text-center bg-white">
-                    <div className="flex justify-center items-center gap-2 mb-1">
-                        <div className="h-px w-8 bg-gray-200"></div>
-                        <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
-                        <div className="h-px w-8 bg-gray-200"></div>
+                        <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                        <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                        <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
-                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.1</p>
-                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
-                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+
+                    {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
                 </div>
+            );
+        };
 
-                {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
-            </div>
-        );
-    };
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-</script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
