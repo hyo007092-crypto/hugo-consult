@@ -137,7 +137,7 @@
             ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
         };
 
-        // --- 카테고리 목록 (사용자 요청 반영) ---
+        // --- 카테고리 목록 ---
         const CATEGORIES = [
             { id: 'lifting_face', name: '안면목거상', tags: ['전체', '안면거상', '안면목거상', 'S미니거상'] },
             { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경 이마거상', '이마축소거상'] },
@@ -177,7 +177,7 @@
                 <div className="mt-8 mb-6 text-center space-y-1">
                     <div className="flex justify-center items-center gap-2 mb-2">
                         <div className="h-px w-6 bg-gray-200"></div>
-                        <span className="text-[10px] text-gray-400 font-bold tracking-widest">HUGO</span>
+                        <span className="text-[10px] text-gray-400 font-bold tracking-widest font-serif">HUGO</span>
                         <div className="h-px w-6 bg-gray-200"></div>
                     </div>
                     <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
@@ -494,8 +494,8 @@
                         {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
                         
                         <div className="flex flex-col items-center">
-                           <h2 className="font-serif text-lg font-bold text-brand-600 tracking-widest">
-                               {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
+                           <h2 className="text-lg font-bold text-brand-600 tracking-widest">
+                               {view === 'DASHBOARD' ? <span className="font-serif">HUGO</span> : selectedCategory?.name}
                            </h2>
                         </div>
 
@@ -507,8 +507,8 @@
                             <div className="animate-fade-in">
                                 {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
                                 <div className="mb-8 text-center">
-                                    <h3 className="text-2xl font-light text-gray-800 mb-1">Consultation</h3>
-                                    <p className="text-xs text-gray-400 uppercase tracking-wider">Select Category</p>
+                                    <h3 className="text-2xl font-light text-gray-800 mb-1 font-serif">Consultation</h3>
+                                    <p className="text-xs text-gray-400 uppercase tracking-wider font-serif">Select Category</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {CATEGORIES.map((cat) => (
@@ -531,7 +531,7 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-3">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
                                             <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -549,7 +549,7 @@
                                             )}
                                         </div>
                                     )) : (
-                                        <div className="col-span-2 text-center py-20">
+                                        <div className="col-span-3 text-center py-20">
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
@@ -577,7 +577,7 @@
                                             <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
                                             <div className="flex gap-1">{selectedCase.tags && selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
                                         </div>
-                                        <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
+                                        <h3 className="text-xl font-bold text-gray-800">{selectedCase.description}</h3>
                                     </div>
                                 </div>
                             </div>
