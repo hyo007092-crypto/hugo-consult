@@ -99,7 +99,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"; // [수정] 인증 모듈 추가
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ▼▼▼ Firebase Config ▼▼▼
         const firebaseConfig = {
@@ -113,18 +113,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app); // [수정] 인증 초기화
-
-        // [수정] 익명 로그인 자동 실행 (권한 문제 해결)
-        signInAnonymously(auth)
-            .then(() => {
-                console.log("Admin access granted (Anonymous)");
-            })
-            .catch((error) => {
-                console.error("Auth Error:", error);
-            });
+        const auth = getAuth(app);
 
         window.db = db;
+        window.auth = auth;
+        window.signInAnonymously = signInAnonymously;
+        window.onAuthStateChanged = onAuthStateChanged;
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
     </script>
 
@@ -145,7 +139,9 @@
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
             X: (props) => <IconWrapper name="x" {...props} />,
-            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
+            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />,
+            Wifi: (props) => <IconWrapper name="wifi" {...props} />,
+            WifiOff: (props) => <IconWrapper name="wifi-off" {...props} />
         };
 
         // --- 카테고리 목록 ---
@@ -287,7 +283,6 @@
                 sideBefore: null, sideAfter: null 
             });
 
-            // 수정 모드일 경우 데이터 로드
             useEffect(() => {
                 if (initialData) {
                     setData({
@@ -314,6 +309,11 @@
 
             const handleSave = async () => {
                 if(!window.db) return alert("서버 연결 실패");
+                // 인증 체크
+                if (!window.auth?.currentUser) {
+                    return alert("서버 연결중입니다. 잠시 후 다시 시도해주세요. (계속 안되면 Firebase Console에서 익명 로그인을 켜주세요)");
+                }
+
                 if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
                 
                 setUploading(true);
@@ -332,18 +332,21 @@
                     };
 
                     if (initialData) {
-                        // 수정 로직
                         await updateDoc(doc(window.db, "cases", initialData.id), docData);
                         alert("수정 완료!");
                     } else {
-                        // 생성 로직
                         docData.createdAt = serverTimestamp();
                         await addDoc(collection(window.db, "cases"), docData);
                         alert("업로드 완료!");
                     }
                     onClose();
                 } catch(e) {
-                    alert("실패: " + e.message);
+                    console.error(e);
+                    if(e.code === 'permission-denied') {
+                        alert("권한 오류: Firebase Console -> Authentication -> Sign-in method 에서 'Anonymous(익명)' 공급업체를 사용 설정해야 합니다.");
+                    } else {
+                        alert("실패: " + e.message);
+                    }
                 } finally {
                     setUploading(false);
                 }
@@ -429,10 +432,31 @@
             const [caseViewType, setCaseViewType] = useState('front');
             const [showUpload, setShowUpload] = useState(false);
             const [editingCase, setEditingCase] = useState(null);
+            const [authStatus, setAuthStatus] = useState('checking'); // checking, ok, fail
 
             useEffect(() => {
                 if(window.lucide) window.lucide.createIcons();
             });
+
+            // 인증 로직 강화
+            useEffect(() => {
+                if(!window.auth) return;
+                const unsubscribe = window.onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        setAuthStatus('ok');
+                    } else {
+                        // 로그인 시도
+                        window.signInAnonymously(window.auth).catch((error) => {
+                            console.error("Auth Fail:", error);
+                            setAuthStatus('fail');
+                            if(error.code === 'auth/operation-not-allowed') {
+                                alert("설정 오류: Firebase Console에서 익명(Anonymous) 로그인을 켜주세요.");
+                            }
+                        });
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
 
             // 뒤로가기 처리
             useEffect(() => {
@@ -454,19 +478,16 @@
             }, [view, isAdmin]);
 
             useEffect(() => {
-                 if (view !== 'LOGIN') {
-                     // 상태를 푸시하지 않고 관리 (중복 푸시 방지)
-                 }
-            }, [view]);
-
-            useEffect(() => {
                 if(window.db && window.firestore) {
                     const { collection, onSnapshot, query, orderBy } = window.firestore;
                     const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
                     const unsub = onSnapshot(q, (snapshot) => {
                         const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setCases(list);
-                    }, (err) => console.log("DB Wait", err));
+                    }, (err) => {
+                        console.log("DB Wait/Error", err);
+                        // 권한 에러 시 알림은 너무 자주 뜨지 않게 콘솔에만 표시하거나 로그인 상태 확인
+                    });
                     return () => unsub();
                 }
             }, [view]);
@@ -474,8 +495,12 @@
             const handleDelete = async (e, id) => {
                 e.stopPropagation();
                 if(confirm("정말 삭제하시겠습니까?")) {
-                    const { deleteDoc, doc } = window.firestore;
-                    await deleteDoc(doc(window.db, "cases", id));
+                    try {
+                        const { deleteDoc, doc } = window.firestore;
+                        await deleteDoc(doc(window.db, "cases", id));
+                    } catch(e) {
+                        alert("삭제 실패: 권한이 부족합니다. (Firebase Console 규칙 확인)");
+                    }
                 }
             };
 
@@ -510,7 +535,13 @@
                            </h2>
                         </div>
 
-                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
+                        {isAdmin ? 
+                            <div className="flex items-center gap-2">
+                                {/* 상태 표시등 */}
+                                <div className={`w-2 h-2 rounded-full ${authStatus === 'ok' ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} title={authStatus==='ok'?'서버 연결됨':'연결 끊김/권한없음'}></div>
+                                <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button>
+                            </div> 
+                        : <div className="w-6"/>}
                     </header>
 
                     <main className="pt-20 pb-8 px-5 max-w-7xl mx-auto min-h-screen">
