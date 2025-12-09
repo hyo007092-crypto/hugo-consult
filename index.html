@@ -531,7 +531,7 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-5 gap-3">
+                                <div className="grid grid-cols-3 gap-3">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
                                             <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -549,7 +549,7 @@
                                             )}
                                         </div>
                                     )) : (
-                                        <div className="col-span-5 text-center py-20">
+                                        <div className="col-span-3 text-center py-20">
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
