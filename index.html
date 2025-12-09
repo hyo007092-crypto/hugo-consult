@@ -523,7 +523,7 @@
 
                         {view === 'LIST' && (
                             <div className="animate-fade-in">
-                                <div className="overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide flex gap-2 w-max mb-2">
+                                <div className="flex flex-wrap justify-center gap-2 mb-6">
                                     {selectedCategory.tags.map(tag => (
                                         <button key={tag} onClick={() => setSelectedTag(tag)} 
                                             className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-brand-600 border-brand-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-brand-300'}`}>
@@ -531,7 +531,7 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-5 gap-3">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
                                             <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -549,7 +549,7 @@
                                             )}
                                         </div>
                                     )) : (
-                                        <div className="col-span-3 text-center py-20">
+                                        <div className="col-span-5 text-center py-20">
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
