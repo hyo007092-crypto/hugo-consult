@@ -1,464 +1,4 @@
-<!DOCTYPE html>
-<html lang="ko" translate="no">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- [중요] 번역기 자동 실행 원천 차단 -->
-    <meta name="google" content="notranslate">
-    
-    <title>Hugo Aesthetic Consult</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
-
-    <style>
-        /* 폰트 설정 */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
-        
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .font-sans { font-family: 'Noto Sans KR', sans-serif; }
-        
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-        
-        /* 고급스러운 화이트 테마 */
-        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
-        
-        .loader { border: 3px solid #E5E7EB; border-top: 3px solid #00796B; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        // 휴고 성형외과 전용 그린 테마 (로고 색상 반영)
-                        brand: {
-                            50: '#E0F2F1',
-                            100: '#B2DFDB',
-                            400: '#26A69A',
-                            500: '#009688', 
-                            600: '#00796B', /* 메인 로고 그린 */
-                            700: '#004D40',
-                        },
-                        gold: { 400: '#FACC15', 500: '#EAB308' }
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="notranslate font-sans antialiased">
-
-    <!-- [필살기] 브라우저 번역기 충돌 방지 코드 -->
-    <script>
-        if (typeof Node === 'function' && Node.prototype) {
-            const originalRemoveChild = Node.prototype.removeChild;
-            Node.prototype.removeChild = function(child) {
-                if (child.parentNode !== this) {
-                    return child;
-                }
-                return originalRemoveChild.apply(this, arguments);
-            }
-            
-            const originalInsertBefore = Node.prototype.insertBefore;
-            Node.prototype.insertBefore = function(newNode, referenceNode) {
-                if (referenceNode && referenceNode.parentNode !== this) {
-                    return newNode;
-                }
-                return originalInsertBefore.apply(this, arguments);
-            }
-        }
-    </script>
-
-    <div id="root">
-        <div class="min-h-screen flex items-center justify-center bg-white">
-            <div class="text-center">
-                <div class="loader mx-auto mb-4"></div>
-                <p class="text-gray-400 text-sm tracking-widest">HUGO PLASTIC SURGERY</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 파이어베이스 연결 설정 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // ▼▼▼ 원장님 파이어베이스 설정 ▼▼▼
-        const firebaseConfig = {
-            apiKey: "AIzaSyAbyo6KDRVji00Knp7gXicS2FHJts_l3_s",
-            authDomain: "hugo-consult.firebaseapp.com",
-            projectId: "hugo-consult",
-            storageBucket: "hugo-consult.firebasestorage.app",
-            messagingSenderId: "445939856276",
-            appId: "1:445939856276:web:a0d00cad2f1ca756d05581"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        window.db = db;
-        window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
-    </script>
-
-    <!-- 리액트 앱 로직 -->
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        
-        const IconWrapper = ({ name, className, ...props }) => {
-            return <i data-lucide={name} className={className} {...props}></i>;
-        };
-
-        const Icons = {
-            ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
-            Plus: (props) => <IconWrapper name="plus" {...props} />,
-            Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
-            Edit2: (props) => <IconWrapper name="edit-2" {...props} />,
-            Monitor: (props) => <IconWrapper name="monitor" {...props} />,
-            Upload: (props) => <IconWrapper name="upload" {...props} />,
-            Check: (props) => <IconWrapper name="check" {...props} />,
-            X: (props) => <IconWrapper name="x" {...props} />,
-            Crop: (props) => <IconWrapper name="crop" {...props} />,
-            ScanFace: (props) => <IconWrapper name="scan-face" {...props} />
-        };
-
-        // 카테고리 (수정된 버전)
-        const CATEGORIES = [
-            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '안면거상', '안면목거상', 'S미니거상'] },
-            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경 이마거상', '이마축소거상'] },
-            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검 (+피치거상)', '눈밑지방재배치', '쌍꺼풀', '눈매교정', '트임'] },
-            { id: 'nose', name: '코성형', tags: ['전체', '콧대', '코끝', '콧볼축소', '재수술'] },
-            { id: 'ears', name: '귀성형', tags: ['전체', '누운귀', '접힌귀', '칼귀'] },
-            { id: 'thread', name: '실리프팅', tags: ['전체', '민트실', '블루로즈', '실루엣소프트'] },
-            { id: 'lipo', name: '지방흡입', tags: ['전체', '얼굴', '팔', '복부', '허벅지'] },
-            { id: 'fat_graft', name: '지방이식', tags: ['전체', '얼굴'] }
-        ];
-
-        // 이미지 압축 함수
-        const compressImage = (file) => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 1200; 
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
-                    };
-                };
-            });
-        };
-
-        // --- 크롭퍼 컴포넌트 ---
-        const ImageCropper = ({ imageSrc, onCrop, onCancel }) => {
-            const imgRef = useRef(null);
-            const [crop, setCrop] = useState({ x: 0, y: 0, width: 100, height: 100 });
-            const [isDragging, setIsDragging] = useState(false);
-            const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-
-            useEffect(() => {
-                if (imgRef.current) {
-                    const size = Math.min(imgRef.current.width, imgRef.current.height) * 0.8;
-                    setCrop({
-                        x: (imgRef.current.width - size) / 2,
-                        y: (imgRef.current.height - size) / 2,
-                        width: size,
-                        height: size
-                    });
-                }
-            }, [imageSrc]);
-
-            const handleMouseDown = (e) => {
-                setIsDragging(true);
-                setStartPos({ 
-                    x: (e.clientX || e.touches[0].clientX) - crop.x, 
-                    y: (e.clientY || e.touches[0].clientY) - crop.y 
-                });
-            };
-
-            const handleMouseMove = (e) => {
-                if (!isDragging) return;
-                const clientX = e.clientX || e.touches[0].clientX;
-                const clientY = e.clientY || e.touches[0].clientY;
-                
-                let newX = clientX - startPos.x;
-                let newY = clientY - startPos.y;
-
-                if (imgRef.current) {
-                    newX = Math.max(0, Math.min(newX, imgRef.current.width - crop.width));
-                    newY = Math.max(0, Math.min(newY, imgRef.current.height - crop.height));
-                }
-
-                setCrop(prev => ({ ...prev, x: newX, y: newY }));
-            };
-
-            const handleMouseUp = () => setIsDragging(false);
-
-            const handleCrop = () => {
-                const canvas = document.createElement('canvas');
-                const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-                const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-                
-                canvas.width = crop.width * scaleX;
-                canvas.height = crop.height * scaleY;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(
-                    imgRef.current,
-                    crop.x * scaleX,
-                    crop.y * scaleY,
-                    crop.width * scaleX,
-                    crop.height * scaleY,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-                
-                onCrop(canvas.toDataURL('image/jpeg'));
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black z-[70] flex flex-col items-center justify-center p-4" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}>
-                    <div className="relative bg-black max-h-[70vh] overflow-hidden">
-                        <img ref={imgRef} src={imageSrc} className="max-w-full max-h-[60vh] object-contain pointer-events-none" onLoad={() => {
-                             const img = imgRef.current;
-                             const size = Math.min(img.width, img.height) * 0.8;
-                             setCrop({ x: (img.width - size)/2, y: (img.height - size)/2, width: size, height: size });
-                        }}/>
-                        <div 
-                            className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.7)]"
-                            style={{ left: crop.x, top: crop.y, width: crop.width, height: crop.height, cursor: 'move' }}
-                            onMouseDown={handleMouseDown}
-                            onTouchStart={handleMouseDown}
-                        >
-                            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
-                                <div className="border-r border-b border-white/30"></div><div className="border-r border-b border-white/30"></div><div className="border-b border-white/30"></div>
-                                <div className="border-r border-b border-white/30"></div><div className="border-r border-b border-white/30"></div><div className="border-b border-white/30"></div>
-                                <div className="border-r border-white/30"></div><div className="border-r border-white/30"></div><div></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="w-full max-w-sm mt-4 flex gap-3">
-                        <button onClick={onCancel} className="flex-1 py-3 bg-gray-700 text-white rounded-lg font-medium">취소</button>
-                        <button onClick={handleCrop} className="flex-1 py-3 bg-brand-600 text-white rounded-lg font-bold">자르기 완료</button>
-                    </div>
-                    <p className="text-white/70 text-xs mt-2">박스를 드래그해서 위치를 조정하세요 (1:1 비율 고정)</p>
-                </div>
-            );
-        };
-
-        // --- 하단 푸터 (수정됨: 이미지 내용 반영 및 간격 조정) ---
-        const Footer = () => {
-            return (
-                <div className="mt-10 mb-8 text-center">
-                    <p className="text-[11px] text-brand-600/70 font-bold tracking-widest mb-2">HUGO PLASTIC SURGERY</p>
-                    <p className="text-[11px] text-gray-400 font-medium mb-1.5">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
-                    <p className="text-[10px] text-gray-300">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
-                </div>
-            );
-        };
-
-        const LoginScreen = ({ onLogin }) => {
-            const [pin, setPin] = useState('');
-            const [error, setError] = useState(false);
-            const [hasLogo, setHasLogo] = useState(true);
-
-            const handleNumClick = (num) => {
-                if (pin.length < 4) {
-                    const newPin = pin + num;
-                    setPin(newPin);
-                    if (newPin.length === 4) {
-                        if (newPin === '0000') setTimeout(() => onLogin(false), 300);
-                        else if (newPin === '9999') setTimeout(() => onLogin(true), 300);
-                        else { setError(true); setTimeout(() => { setPin(''); setError(false); }, 1000); }
-                    }
-                }
-            };
-            return (
-                <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                    <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
-                        <div className="text-center space-y-3">
-                            <img src="./logo.png" alt="HUGO" className="h-20 mx-auto object-contain mb-2" 
-                                onError={(e) => { e.target.style.display = 'none'; setHasLogo(false); }} 
-                            />
-                            {!hasLogo && (
-                                <h1 className="text-4xl font-serif tracking-widest text-brand-600 font-bold mb-1">HUGO</h1>
-                            )}
-                            <p className="text-sm tracking-[0.3em] text-brand-600 font-bold font-serif mt-2 uppercase">Plastic Surgery</p>
-                        </div>
-                        <div className="flex space-x-4 mb-4">
-                            {[0, 1, 2, 3].map((i) => <div key={i} className={`w-3 h-3 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-brand-600 scale-110' : 'bg-gray-200'}`} />)}
-                        </div>
-                        {error && <p className="text-red-500 text-sm absolute top-1/2 mt-[-50px] font-medium animate-pulse">PIN 번호를 확인해주세요</p>}
-                        <div className="grid grid-cols-3 gap-5 w-full px-6">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                                <button key={num} onClick={() => handleNumClick(num.toString())} 
-                                    className="w-16 h-16 rounded-full text-2xl font-light text-gray-600 bg-white shadow-sm border border-gray-100 active:bg-gray-50 active:scale-95 transition-all mx-auto flex items-center justify-center">
-                                    {num}
-                                </button>
-                            ))}
-                            <div className="flex justify-center items-center"><button onClick={() => setPin('')} className="text-xs text-gray-400 hover:text-brand-600 transition-colors">전체취소</button></div>
-                            <button onClick={() => handleNumClick('0')} className="w-16 h-16 rounded-full text-2xl font-light text-gray-600 bg-white shadow-sm border border-gray-100 active:bg-gray-50 active:scale-95 transition-all mx-auto flex items-center justify-center">0</button>
-                            <div className="flex justify-center items-center"><button onClick={() => setPin(pin.slice(0, -1))} className="w-16 h-16 flex items-center justify-center text-gray-400 hover:text-gray-600"><Icons.ArrowLeft size={24} /></button></div>
-                        </div>
-                    </div>
-                    <div className="absolute bottom-8 w-full">
-                        <Footer />
-                    </div>
-                </div>
-            );
-        };
-
-        const CompareSlider = ({ beforeImage, afterImage }) => {
-            const [sliderPosition, setSliderPosition] = useState(50);
-            const containerRef = useRef(null);
-            const handleMove = (e) => {
-                if (containerRef.current) {
-                    const rect = containerRef.current.getBoundingClientRect();
-                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                    setSliderPosition(Math.max(0, Math.min(100, (x / rect.width) * 100)));
-                }
-            };
-            return (
-                <div ref={containerRef} className="relative w-full aspect-[1/1] overflow-hidden rounded-xl bg-gray-100 shadow-xl border border-gray-100" onMouseMove={handleMove} onTouchMove={handleMove}>
-                    {afterImage ? <img src={afterImage} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">After 이미지 없음</div>}
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-bold shadow-sm">After</div>
-                    <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPosition}%` }}>
-                        {beforeImage ? <img src={beforeImage} className="absolute inset-0 max-w-none h-full w-full object-cover" style={{ width: containerRef.current?.offsetWidth }} /> : <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: containerRef.current?.offsetWidth }}>Before 이미지 없음</div>}
-                        <div className="absolute top-4 left-4 bg-brand-600/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">Before</div>
-                    </div>
-                    <div className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.3)] z-30" style={{ left: `${sliderPosition}%` }}>
-                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 bg-white rounded-full border border-gray-200 shadow-lg flex items-center justify-center text-brand-600">
-                            <div className="flex gap-0.5 h-3"><div className="w-0.5 bg-gray-300"></div><div className="w-0.5 bg-gray-300"></div></div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // 통합 케이스 모달 (등록 + 수정)
-        const CaseModal = ({ onClose, categories, initialData = null }) => {
-            const [uploading, setUploading] = useState(false);
-            const [data, setData] = useState({ 
-                categoryId: categories[0].id, 
-                patientId: '', desc: '', tags: '', 
-                frontBefore: null, frontAfter: null, 
-                angleBefore: null, angleAfter: null, 
-                sideBefore: null, sideAfter: null 
-            });
-            
-            // 자르기 관련 상태
-            const [croppingImage, setCroppingImage] = useState(null);
-
-            // 수정 모드일 경우 초기 데이터 세팅 (안전장치 추가)
-            useEffect(() => {
-                if (initialData) {
-                    setData({
-                        categoryId: initialData.categoryId || categories[0].id,
-                        patientId: initialData.patientId || '',
-                        desc: initialData.description || '',
-                        tags: initialData.tags ? initialData.tags.join(', ') : '',
-                        frontBefore: initialData.images?.front?.before || null,
-                        frontAfter: initialData.images?.front?.after || null,
-                        angleBefore: initialData.images?.angle45?.before || null,
-                        angleAfter: initialData.images?.angle45?.after || null,
-                        sideBefore: initialData.images?.side?.before || null,
-                        sideAfter: initialData.images?.side?.after || null,
-                    });
-                }
-            }, [initialData]);
-
-            const handleFileSelect = (e, key) => {
-                if(e.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        setCroppingImage({ key, src: e.target.result });
-                    };
-                    reader.readAsDataURL(e.target.files[0]);
-                }
-            };
-
-            const handleCropComplete = (croppedImgSrc) => {
-                if (croppingImage) {
-                    setData(prev => ({ ...prev, [croppingImage.key]: croppedImgSrc }));
-                    setCroppingImage(null);
-                }
-            };
-
-            const handleSave = async () => {
-                if(!window.db) return alert("서버 연결 실패");
-                if(!data.patientId || !data.desc) return alert("필수 정보를 입력해주세요.");
-                
-                setUploading(true);
-                try {
-                    const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
-                    
-                    const docData = {
-                        categoryId: data.categoryId,
-                        patientId: data.patientId,
-                        description: data.desc,
-                        tags: data.tags.split(',').map(t=>t.trim()).filter(t=>t),
-                        images: { 
-                            front: { before: data.frontBefore, after: data.frontAfter },
-                            angle45: { before: data.angleBefore, after: data.angleAfter },
-                            side: { before: data.sideBefore, after: data.sideAfter }
-                        }
-                    };
-
-                    if (initialData) {
-                        // 수정 로직
-                        await updateDoc(doc(window.db, "cases", initialData.id), docData);
-                        alert("수정 완료!");
-                    } else {
-                        // 생성 로직
-                        docData.createdAt = serverTimestamp();
-                        await addDoc(collection(window.db, "cases"), docData);
-                        alert("업로드 완료!");
-                    }
-                    onClose();
-                } catch(e) {
-                    alert("실패: " + e.message);
-                } finally {
-                    setUploading(false);
-                }
-            };
-
-            const FileInput = ({ label, bindKeyBefore, bindKeyAfter }) => (
-                <div className="space-y-2">
-                    <p className="text-xs font-bold text-brand-600 ml-1">{label}</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="relative">
-                            <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${data[bindKeyBefore] ? 'bg-brand-600/10 border-brand-600' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                                {data[bindKeyBefore] ? <img src={data[bindKeyBefore]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">Before<br/>(선택)</span>}
-                                <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyBefore)}/>
-                            </label>
-                             {data[bindKeyBefore] && (
-                                <button onClick={()=>setCroppingImage({key: bindKeyBefore, src: data[bindKeyBefore]})} className="absolute bottom-1 right-1 bg-black/50 p-1 rounded text-white"><Icons.Crop size={12}/></button>
-                            )}
-                        </div>
-
-                        <div className="relative">
+<div className="relative">
                             <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
                                 {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
                                 <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyAfter)}/>
@@ -489,7 +29,7 @@
                             </div>
                             
                             <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                                <span className="text-brand-600 font-bold">TIP</span> 권장 사이즈: 1080x1080 (1:1 비율)
+                                <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -562,7 +102,7 @@
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
                 return () => window.removeEventListener('popstate', handlePopState);
-            }, [view]);
+            }, [view, isAdmin]);
 
             useEffect(() => {
                  if (view !== 'LOGIN') {
@@ -590,7 +130,6 @@
                 }
             };
 
-            // 수정 버튼 클릭
             const handleEdit = (e, item) => {
                 e.stopPropagation();
                 setEditingCase(item);
@@ -602,8 +141,14 @@
                 setEditingCase(null);
             };
 
-            const CategoryIcon = ({ name, rotate }) => {
-                return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
+            // ✅ 로그아웃 기능 추가
+            const handleLogout = async () => {
+                if(confirm("로그아웃 하시겠습니까?")) {
+                    const { signOut } = window.firebaseAuth;
+                    await signOut(window.auth);
+                    setIsAdmin(false);
+                    setView('LOGIN');
+                }
             };
 
             if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
@@ -621,7 +166,12 @@
                            </h2>
                         </div>
 
-                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
+                        {isAdmin ? (
+                            <div className="flex gap-2">
+                                <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button>
+                                <button onClick={handleLogout} className="p-2 -mr-2 text-gray-400 hover:text-red-500 transition-colors"><Icons.LogOut size={20}/></button>
+                            </div>
+                        ) : <div className="w-6"/>}
                     </header>
 
                     <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
@@ -656,7 +206,7 @@
                                 <div className="grid grid-cols-2 gap-4">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
-                                            <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                                             <div className="absolute bottom-3 left-3 right-3">
                                                 <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
@@ -664,7 +214,6 @@
                                             </div>
                                             {isAdmin && (
                                                 <div className="absolute top-2 right-2 flex gap-1">
-                                                    {/* 수정/삭제 버튼 */}
                                                     <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
                                                     <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
                                                 </div>
@@ -672,7 +221,7 @@
                                         </div>
                                     )) : (
                                         <div className="col-span-2 text-center py-20">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
+                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.Upload size={32}/></div>
                                             <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
                                             <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
                                                 이전 메뉴로 돌아가기
@@ -696,12 +245,12 @@
                                 </div>
                                 <div className="flex-1 flex flex-col justify-center min-h-0">
                                     <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
-                                        <CompareSlider beforeImage={selectedCase.images?.[caseViewType]?.before} afterImage={selectedCase.images?.[caseViewType]?.after} />
+                                        <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
                                     </div>
                                     <div className="mt-8 space-y-3 px-2">
                                         <div className="flex items-center justify-between">
                                             <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
-                                            <div className="flex gap-1">{selectedCase.tags && selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
+                                            <div className="flex gap-1">{selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
                                         </div>
                                         <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
                                     </div>
@@ -716,7 +265,7 @@
                             <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
                             <div className="h-px w-8 bg-gray-200"></div>
                         </div>
-                        <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                        <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.1</p>
                         <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
                         <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
