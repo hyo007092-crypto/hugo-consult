@@ -95,10 +95,11 @@
         </div>
     </div>
 
-    <!-- 파이어베이스 연결 설정 -->
+    <!-- 파이어베이스 연결 설정 (인증 모듈 추가됨) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"; // [수정] 인증 모듈 추가
 
         // ▼▼▼ Firebase Config ▼▼▼
         const firebaseConfig = {
@@ -112,6 +113,16 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app); // [수정] 인증 초기화
+
+        // [수정] 익명 로그인 자동 실행 (권한 문제 해결)
+        signInAnonymously(auth)
+            .then(() => {
+                console.log("Admin access granted (Anonymous)");
+            })
+            .catch((error) => {
+                console.error("Auth Error:", error);
+            });
 
         window.db = db;
         window.firestore = { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp };
@@ -502,7 +513,7 @@
                         {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
                     </header>
 
-                    <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
+                    <main className="pt-20 pb-8 px-5 max-w-7xl mx-auto min-h-screen">
                         {view === 'DASHBOARD' && (
                             <div className="animate-fade-in">
                                 {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
@@ -510,7 +521,7 @@
                                     <h3 className="text-2xl font-light text-gray-800 mb-1 font-serif">Consultation</h3>
                                     <p className="text-xs text-gray-400 uppercase tracking-wider font-serif">Select Category</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {CATEGORIES.map((cat) => (
                                         <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
                                             className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
@@ -531,7 +542,7 @@
                                         </button>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-5 gap-4">
                                     {filteredCases.length > 0 ? filteredCases.map(item => (
                                         <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
                                             <img src={item.images?.front?.after || item.images?.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -549,7 +560,7 @@
                                             )}
                                         </div>
                                     )) : (
-                                        <div className="col-span-3 text-center py-20">
+                                        <div className="col-span-5 text-center py-20">
                                             <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
                                             {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
