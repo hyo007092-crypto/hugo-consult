@@ -27,7 +27,7 @@
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
         
         /* 고급스러운 화이트 테마 */
-        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; }
+        body { background-color: #FAFAFA; color: #1F2937; touch-action: manipulation; overscroll-behavior-y: none; }
         
         .loader { border: 3px solid #E5E7EB; border-top: 3px solid #00796B; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -126,6 +126,7 @@
             ArrowLeft: (props) => <IconWrapper name="arrow-left" {...props} />,
             Plus: (props) => <IconWrapper name="plus" {...props} />,
             Trash2: (props) => <IconWrapper name="trash-2" {...props} />,
+            Edit2: (props) => <IconWrapper name="edit-2" {...props} />, // 수정 아이콘
             Monitor: (props) => <IconWrapper name="monitor" {...props} />,
             Upload: (props) => <IconWrapper name="upload" {...props} />,
             Check: (props) => <IconWrapper name="check" {...props} />,
@@ -133,16 +134,18 @@
             Crop: (props) => <IconWrapper name="crop" {...props} />
         };
 
-        // 카테고리 업데이트 (원장님 요청 사항 반영 완료)
+        // 카테고리 (수정된 버전)
         const CATEGORIES = [
-            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '안면거상', '안면목거상', 'S미니거상'] },
-            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경 이마거상', '이마축소거상'] },
-            { id: 'eyes', name: '눈', tags: ['전체', '상안검', '하안검 (+피치거상)', '눈밑지방재배치', '쌍꺼풀', '눈매교정', '트임'] },
-            { id: 'nose', name: '코', tags: ['전체', '콧대', '코끝', '콧볼축소', '재수술'] },
-            { id: 'ears', name: '귀', tags: ['전체', '누운귀', '접힌귀', '칼귀'] },
-            { id: 'thread', name: '실리프팅', tags: ['전체', '민트실', '블루로즈', '실루엣소프트'] },
-            { id: 'lipo', name: '지방흡입', tags: ['전체', '얼굴', '팔', '복부', '허벅지'] },
-            { id: 'fat_graft', name: '지방이식', tags: ['전체', '얼굴'] },
+            { id: 'lifting_face', name: '안면목거상', tags: ['전체', '미니거상', '목거상', '재수술'] },
+            { id: 'lifting_forehead', name: '이마거상', tags: ['전체', '내시경', '축소병행'] },
+            { id: 'eyes', name: '눈성형', tags: ['전체', '상안검', '하안검', '눈밑지방재배치', '쌍꺼풀', '트임', '눈매교정'] },
+            { id: 'thread', name: '실리프팅', tags: ['전체', '민트', '실루엣소프트', '잼버'] },
+            { id: 'ears', name: '귀성형', tags: ['전체', '돌출귀', '이수열', '켈로이드'] },
+            { id: 'nose', name: '코성형', tags: ['전체', '낮은코', '매부리', '복코', '재수술'] },
+            { id: 'lipo', name: '지방흡입', tags: ['전체', '팔', '복부', '허벅지', '얼굴', '종아리'] },
+            { id: 'fat_graft', name: '지방이식', tags: ['전체', '풀페이스', '이마', '앞광대'] },
+            { id: 'philtrum', name: '인중축소(C컬)', tags: ['전체', '내측', '외측', '입꼬리'] },
+            { id: 'petit', name: '필러&보톡스', tags: ['전체', '입술필러', '애교필러', '이마필러', '주름보톡스'] },
         ];
 
         // 이미지 압축 함수
@@ -266,13 +269,18 @@
             );
         };
 
-        // --- 하단 푸터 (수정됨: 이미지 내용 반영 및 간격 조정) ---
+        // --- 하단 푸터 (수정됨) ---
         const Footer = () => {
             return (
-                <div className="mt-10 mb-8 text-center">
-                    <p className="text-[11px] text-brand-600/70 font-bold tracking-widest mb-2">HUGO PLASTIC SURGERY</p>
-                    <p className="text-[11px] text-gray-400 font-medium mb-1.5">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
-                    <p className="text-[10px] text-gray-300">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                <div className="mt-8 mb-6 text-center space-y-1">
+                    <div className="flex justify-center items-center gap-2 mb-2">
+                        <div className="h-px w-6 bg-gray-200"></div>
+                        <span className="text-[10px] text-gray-400 font-bold tracking-widest">HUGO</span>
+                        <div className="h-px w-6 bg-gray-200"></div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.0</p>
+                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                 </div>
             );
         };
@@ -297,7 +305,6 @@
                 <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
                     <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
                         <div className="text-center space-y-3">
-                            {/* 로고 이미지: 로드 실패시 텍스트 표시, 성공시 텍스트 숨김 처리 */}
                             <img src="./logo.png" alt="HUGO" className="h-20 mx-auto object-contain mb-2" 
                                 onError={(e) => { e.target.style.display = 'none'; setHasLogo(false); }} 
                             />
@@ -356,7 +363,8 @@
             );
         };
 
-        const UploadModal = ({ onClose, categories }) => {
+        // 통합 케이스 모달 (등록 + 수정)
+        const CaseModal = ({ onClose, categories, initialData = null }) => {
             const [uploading, setUploading] = useState(false);
             const [data, setData] = useState({ 
                 categoryId: categories[0].id, 
@@ -368,6 +376,24 @@
             
             // 자르기 관련 상태
             const [croppingImage, setCroppingImage] = useState(null);
+
+            // 수정 모드일 경우 초기 데이터 세팅
+            useEffect(() => {
+                if (initialData) {
+                    setData({
+                        categoryId: initialData.categoryId,
+                        patientId: initialData.patientId,
+                        desc: initialData.description,
+                        tags: initialData.tags ? initialData.tags.join(', ') : '',
+                        frontBefore: initialData.images?.front?.before || null,
+                        frontAfter: initialData.images?.front?.after || null,
+                        angleBefore: initialData.images?.angle45?.before || null,
+                        angleAfter: initialData.images?.angle45?.after || null,
+                        sideBefore: initialData.images?.side?.before || null,
+                        sideAfter: initialData.images?.side?.after || null,
+                    });
+                }
+            }, [initialData]);
 
             const handleFileSelect = (e, key) => {
                 if(e.target.files[0]) {
@@ -392,8 +418,9 @@
                 
                 setUploading(true);
                 try {
-                    const { collection, addDoc, serverTimestamp } = window.firestore;
-                    await addDoc(collection(window.db, "cases"), {
+                    const { collection, addDoc, updateDoc, doc, serverTimestamp } = window.firestore;
+                    
+                    const docData = {
                         categoryId: data.categoryId,
                         patientId: data.patientId,
                         description: data.desc,
@@ -402,10 +429,19 @@
                             front: { before: data.frontBefore, after: data.frontAfter },
                             angle45: { before: data.angleBefore, after: data.angleAfter },
                             side: { before: data.sideBefore, after: data.sideAfter }
-                        },
-                        createdAt: serverTimestamp()
-                    });
-                    alert("업로드 완료!");
+                        }
+                    };
+
+                    if (initialData) {
+                        // 수정 로직
+                        await updateDoc(doc(window.db, "cases", initialData.id), docData);
+                        alert("수정 완료!");
+                    } else {
+                        // 생성 로직
+                        docData.createdAt = serverTimestamp();
+                        await addDoc(collection(window.db, "cases"), docData);
+                        alert("업로드 완료!");
+                    }
                     onClose();
                 } catch(e) {
                     alert("실패: " + e.message);
@@ -454,33 +490,41 @@
                     <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center ${croppingImage ? 'hidden' : ''}`}>
                         <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-                                <h3 className="text-lg font-bold text-gray-800">새 케이스 등록</h3>
+                                <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                             </div>
                             
                             <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                                <span className="text-brand-600 font-bold">TIP</span> 권장 사이즈: 1080x1080 (1:1 비율)
+                                <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
-                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
+                                        value={data.categoryId}
+                                        onChange={e=>setData({...data, categoryId: e.target.value})}>
                                         {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
-                                    <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" onChange={e=>setData({...data, patientId: e.target.value})}/>
+                                    <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
+                                        value={data.patientId}
+                                        onChange={e=>setData({...data, patientId: e.target.value})}/>
                                 </div>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" onChange={e=>setData({...data, desc: e.target.value})}/>
+                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
+                                    value={data.desc}
+                                    onChange={e=>setData({...data, desc: e.target.value})}/>
                             </div>
                             <div>
                                  <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" onChange={e=>setData({...data, tags: e.target.value})}/>
+                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
+                                    value={data.tags}
+                                    onChange={e=>setData({...data, tags: e.target.value})}/>
                             </div>
                             
                             <div className="space-y-4 pt-2 border-t border-gray-100">
@@ -489,7 +533,7 @@
                                 <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
                             </div>
                             <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-brand-400 to-brand-600 hover:from-brand-500 hover:to-brand-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
-                                {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : "저장 및 업로드"}
+                                {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
                             </button>
                         </div>
                     </div>
@@ -506,6 +550,7 @@
             const [selectedCase, setSelectedCase] = useState(null);
             const [caseViewType, setCaseViewType] = useState('front');
             const [showUpload, setShowUpload] = useState(false);
+            const [editingCase, setEditingCase] = useState(null);
 
             useEffect(() => {
                 if(window.lucide) window.lucide.createIcons();
@@ -518,19 +563,21 @@
                         setView('LIST');
                     } else if (view === 'LIST') {
                         setView('DASHBOARD');
+                    } else if (view === 'DASHBOARD' && !isAdmin) {
+                        // 대시보드에서는 뒤로가기 시 아무 동작 안함 (브라우저 종료 방지용)
                     }
                 };
                 window.history.pushState(null, '', window.location.href);
                 window.addEventListener('popstate', handlePopState);
                 return () => window.removeEventListener('popstate', handlePopState);
-            }, [view]);
+            }, [view, isAdmin]);
 
+            // 뷰 변경 시 히스토리 스택 관리
             useEffect(() => {
                  if (view !== 'LOGIN') {
                      window.history.pushState(null, '', window.location.href);
                  }
             }, [view]);
-
 
             useEffect(() => {
                 if(window.db && window.firestore) {
@@ -552,6 +599,18 @@
                 }
             };
 
+            // 수정 버튼 클릭
+            const handleEdit = (e, item) => {
+                e.stopPropagation();
+                setEditingCase(item);
+                setShowUpload(true);
+            };
+
+            const handleCloseModal = () => {
+                setShowUpload(false);
+                setEditingCase(null);
+            };
+
             const CategoryIcon = ({ name, rotate }) => {
                 return <IconWrapper name={name} className={`w-6 h-6 ${rotate ? 'rotate-'+rotate : ''}`} />;
             };
@@ -571,7 +630,7 @@
                            </h2>
                         </div>
 
-                        {isAdmin ? <button onClick={()=>setShowUpload(true)} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
+                        {isAdmin ? <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 -mr-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button> : <div className="w-6"/>}
                     </header>
 
                     <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
@@ -612,13 +671,22 @@
                                                 <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
                                                 <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
                                             </div>
-                                            {isAdmin && <button onClick={(e)=>handleDelete(e, item.id)} className="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white hover:bg-red-500/80 transition-colors"><Icons.Trash2 size={14}/></button>}
+                                            {isAdmin && (
+                                                <div className="absolute top-2 right-2 flex gap-1">
+                                                    {/* 수정/삭제 버튼 (크기 축소 및 아이콘 변경) */}
+                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
+                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
+                                                </div>
+                                            )}
                                         </div>
                                     )) : (
                                         <div className="col-span-2 text-center py-20">
                                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.ScanFace size={32}/></div>
-                                            <p className="text-gray-400 text-sm">등록된 사례가 없습니다.</p>
-                                            {isAdmin && <p className="text-gold-500 text-xs mt-2 font-bold">+ 버튼을 눌러 추가하세요</p>}
+                                            <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
+                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
+                                                이전 메뉴로 돌아가기
+                                            </button>
+                                            {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
                                         </div>
                                     )}
                                 </div>
@@ -662,7 +730,7 @@
                         <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                     </div>
 
-                    {showUpload && <UploadModal categories={CATEGORIES} onClose={()=>{setShowUpload(false)}} />}
+                    {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
                 </div>
             );
         };
