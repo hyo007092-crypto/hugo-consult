@@ -1,282 +1,265 @@
-<div className="relative">
-                            <label className={`aspect-[1/1] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${data[bindKeyAfter] ? 'bg-gold-100 border-gold-500' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}`}>
-                                {data[bindKeyAfter] ? <img src={data[bindKeyAfter]} className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-500 font-medium text-center">After<br/>(선택)</span>}
-                                <input type="file" hidden accept="image/*" onChange={e=>handleFileSelect(e, bindKeyAfter)}/>
-                            </label>
-                             {data[bindKeyAfter] && (
-                                <button onClick={()=>setCroppingImage({key: bindKeyAfter, src: data[bindKeyAfter]})} className="absolute bottom-1 right-1 bg-black/50 p-1 rounded text-white"><Icons.Crop size={12}/></button>
-                            )}
+return (
+            <>
+                {croppingImage && (
+                    <ImageCropper 
+                        imageSrc={croppingImage.src} 
+                        onCrop={handleCropComplete} 
+                        onCancel={() => setCroppingImage(null)} 
+                    />
+                )}
+
+                <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center ${croppingImage ? 'hidden' : ''}`}>
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+                            <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
                         </div>
+                        
+                        <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
+                            <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
+                                <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
+                                    value={data.categoryId}
+                                    onChange={e=>setData({...data, categoryId: e.target.value})}>
+                                    {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
+                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
+                                    value={data.patientId}
+                                    onChange={e=>setData({...data, patientId: e.target.value})}/>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
+                                value={data.desc}
+                                onChange={e=>setData({...data, desc: e.target.value})}/>
+                        </div>
+                        <div>
+                             <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
+                            <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
+                                value={data.tags}
+                                onChange={e=>setData({...data, tags: e.target.value})}/>
+                        </div>
+                        
+                        <div className="space-y-4 pt-2 border-t border-gray-100">
+                            <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
+                            <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
+                            <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
+                        </div>
+                        <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-brand-400 to-brand-600 hover:from-brand-500 hover:to-brand-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
+                            {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
+                        </button>
                     </div>
                 </div>
-            );
+            </>
+        );
+    };
 
-            return (
-                <>
-                    {croppingImage && (
-                        <ImageCropper 
-                            imageSrc={croppingImage.src} 
-                            onCrop={handleCropComplete} 
-                            onCancel={() => setCroppingImage(null)} 
-                        />
+    const App = () => {
+        const [view, setView] = useState('LOGIN');
+        const [isAdmin, setIsAdmin] = useState(false);
+        const [cases, setCases] = useState([]);
+        const [selectedCategory, setSelectedCategory] = useState(null);
+        const [selectedTag, setSelectedTag] = useState('전체');
+        const [selectedCase, setSelectedCase] = useState(null);
+        const [caseViewType, setCaseViewType] = useState('front');
+        const [showUpload, setShowUpload] = useState(false);
+        const [editingCase, setEditingCase] = useState(null);
+
+        useEffect(() => {
+            if(window.lucide) window.lucide.createIcons();
+        });
+
+        useEffect(() => {
+            const handlePopState = (event) => {
+                if (view === 'DETAIL') {
+                    setView('LIST');
+                } else if (view === 'LIST') {
+                    setView('DASHBOARD');
+                }
+            };
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', handlePopState);
+            return () => window.removeEventListener('popstate', handlePopState);
+        }, [view, isAdmin]);
+
+        useEffect(() => {
+             if (view !== 'LOGIN') {
+                 window.history.pushState(null, '', window.location.href);
+             }
+        }, [view]);
+
+        useEffect(() => {
+            if(window.db && window.firestore) {
+                const { collection, onSnapshot, query, orderBy } = window.firestore;
+                const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
+                const unsub = onSnapshot(q, (snapshot) => {
+                    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setCases(list);
+                }, (err) => console.log("DB Wait", err));
+                return () => unsub();
+            }
+        }, [view]);
+
+        const handleDelete = async (e, id) => {
+            e.stopPropagation();
+            if(confirm("정말 삭제하시겠습니까?")) {
+                const { deleteDoc, doc } = window.firestore;
+                await deleteDoc(doc(window.db, "cases", id));
+            }
+        };
+
+        const handleEdit = (e, item) => {
+            e.stopPropagation();
+            setEditingCase(item);
+            setShowUpload(true);
+        };
+
+        const handleCloseModal = () => {
+            setShowUpload(false);
+            setEditingCase(null);
+        };
+
+        const handleLogout = async () => {
+            if(confirm("로그아웃 하시겠습니까?")) {
+                const { signOut } = window.firebaseAuth;
+                await signOut(window.auth);
+                setIsAdmin(false);
+                setView('LOGIN');
+            }
+        };
+
+        if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
+
+        const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
+
+        return (
+            <div className="bg-white min-h-screen text-gray-800 font-sans selection:bg-gold-100">
+                <header className="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 h-16 flex items-center justify-between px-5 shadow-sm">
+                    {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
+                    
+                    <div className="flex flex-col items-center">
+                       <h2 className="font-serif text-lg font-bold text-brand-600 tracking-widest">
+                           {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
+                       </h2>
+                    </div>
+
+                    {isAdmin ? (
+                        <div className="flex gap-2">
+                            <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button>
+                            <button onClick={handleLogout} className="p-2 -mr-2 text-gray-400 hover:text-red-500 transition-colors"><Icons.LogOut size={20}/></button>
+                        </div>
+                    ) : <div className="w-6"/>}
+                </header>
+
+                <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
+                    {view === 'DASHBOARD' && (
+                        <div className="animate-fade-in">
+                            {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
+                            <div className="mb-8 text-center">
+                                <h3 className="text-2xl font-light text-gray-800 mb-1">Consultation</h3>
+                                <p className="text-xs text-gray-400 uppercase tracking-wider">Select Category</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                {CATEGORIES.map((cat) => (
+                                    <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
+                                        className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
+                                        <span className="text-base font-bold text-gray-700">{cat.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
-                    <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-4 overflow-y-auto flex items-center justify-center ${croppingImage ? 'hidden' : ''}`}>
-                        <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-                                <h3 className="text-lg font-bold text-gray-800">{initialData ? '케이스 수정' : '새 케이스 등록'}</h3>
-                                <button onClick={onClose} className="text-gray-400 hover:text-gray-800"><Icons.X size={24}/></button>
+                    {view === 'LIST' && (
+                        <div className="animate-fade-in">
+                            <div className="overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide flex gap-2 w-max mb-2">
+                                {selectedCategory.tags.map(tag => (
+                                    <button key={tag} onClick={() => setSelectedTag(tag)} 
+                                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-brand-600 border-brand-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-brand-300'}`}>
+                                        {tag}
+                                    </button>
+                                ))}
                             </div>
-                            
-                            <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500 flex items-center gap-2">
-                                <span className="text-brand-600 font-bold">TIP</span> 사진은 1:1 비율(1080x1080)을 권장합니다.
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 block mb-1">카테고리</label>
-                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" 
-                                        value={data.categoryId}
-                                        onChange={e=>setData({...data, categoryId: e.target.value})}>
-                                        {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 block mb-1">환자 ID</label>
-                                    <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 240101-A" 
-                                        value={data.patientId}
-                                        onChange={e=>setData({...data, patientId: e.target.value})}/>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 block mb-1">수술 내용</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="예: 자연유착 쌍꺼풀 1개월 경과" 
-                                    value={data.desc}
-                                    onChange={e=>setData({...data, desc: e.target.value})}/>
-                            </div>
-                            <div>
-                                 <label className="text-xs font-bold text-gray-500 block mb-1">태그</label>
-                                <input className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none transition-all" placeholder="쉼표로 구분 (예: 20대, 자연스러움)" 
-                                    value={data.tags}
-                                    onChange={e=>setData({...data, tags: e.target.value})}/>
-                            </div>
-                            
-                            <div className="space-y-4 pt-2 border-t border-gray-100">
-                                <FileInput label="1. 정면 (Front)" bindKeyBefore="frontBefore" bindKeyAfter="frontAfter" />
-                                <FileInput label="2. 45도 (Angle)" bindKeyBefore="angleBefore" bindKeyAfter="angleAfter" />
-                                <FileInput label="3. 측면 (Side)" bindKeyBefore="sideBefore" bindKeyAfter="sideAfter" />
-                            </div>
-                            <button onClick={handleSave} disabled={uploading} className="w-full bg-gradient-to-r from-brand-400 to-brand-600 hover:from-brand-500 hover:to-brand-700 text-white py-3.5 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all flex justify-center">
-                                {uploading ? <div className="loader border-white border-t-transparent w-5 h-5"></div> : (initialData ? "수정 완료" : "저장 및 업로드")}
-                            </button>
-                        </div>
-                    </div>
-                </>
-            );
-        };
-
-        const App = () => {
-            const [view, setView] = useState('LOGIN');
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [cases, setCases] = useState([]);
-            const [selectedCategory, setSelectedCategory] = useState(null);
-            const [selectedTag, setSelectedTag] = useState('전체');
-            const [selectedCase, setSelectedCase] = useState(null);
-            const [caseViewType, setCaseViewType] = useState('front');
-            const [showUpload, setShowUpload] = useState(false);
-            const [editingCase, setEditingCase] = useState(null);
-
-            useEffect(() => {
-                if(window.lucide) window.lucide.createIcons();
-            });
-
-            // 뒤로가기 처리
-            useEffect(() => {
-                const handlePopState = (event) => {
-                    if (view === 'DETAIL') {
-                        setView('LIST');
-                    } else if (view === 'LIST') {
-                        setView('DASHBOARD');
-                    }
-                };
-                window.history.pushState(null, '', window.location.href);
-                window.addEventListener('popstate', handlePopState);
-                return () => window.removeEventListener('popstate', handlePopState);
-            }, [view, isAdmin]);
-
-            useEffect(() => {
-                 if (view !== 'LOGIN') {
-                     window.history.pushState(null, '', window.location.href);
-                 }
-            }, [view]);
-
-            useEffect(() => {
-                if(window.db && window.firestore) {
-                    const { collection, onSnapshot, query, orderBy } = window.firestore;
-                    const q = query(collection(window.db, "cases"), orderBy("createdAt", "desc"));
-                    const unsub = onSnapshot(q, (snapshot) => {
-                        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setCases(list);
-                    }, (err) => console.log("DB Wait", err));
-                    return () => unsub();
-                }
-            }, [view]);
-
-            const handleDelete = async (e, id) => {
-                e.stopPropagation();
-                if(confirm("정말 삭제하시겠습니까?")) {
-                    const { deleteDoc, doc } = window.firestore;
-                    await deleteDoc(doc(window.db, "cases", id));
-                }
-            };
-
-            const handleEdit = (e, item) => {
-                e.stopPropagation();
-                setEditingCase(item);
-                setShowUpload(true);
-            };
-
-            const handleCloseModal = () => {
-                setShowUpload(false);
-                setEditingCase(null);
-            };
-
-            // ✅ 로그아웃 기능 추가
-            const handleLogout = async () => {
-                if(confirm("로그아웃 하시겠습니까?")) {
-                    const { signOut } = window.firebaseAuth;
-                    await signOut(window.auth);
-                    setIsAdmin(false);
-                    setView('LOGIN');
-                }
-            };
-
-            if (view === 'LOGIN') return <LoginScreen onLogin={(admin) => { setIsAdmin(admin); setView('DASHBOARD'); }} />;
-
-            const filteredCases = selectedCategory ? cases.filter(c => c.categoryId === selectedCategory.id && (selectedTag === '전체' || (c.tags && c.tags.includes(selectedTag)))) : [];
-
-            return (
-                <div className="bg-white min-h-screen text-gray-800 font-sans selection:bg-gold-100">
-                    <header className="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 h-16 flex items-center justify-between px-5 shadow-sm">
-                        {view !== 'DASHBOARD' ? <button onClick={() => view === 'DETAIL' ? setView('LIST') : setView('DASHBOARD')} className="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors"><Icons.ArrowLeft size={24}/></button> : <div className="w-6"/>}
-                        
-                        <div className="flex flex-col items-center">
-                           <h2 className="font-serif text-lg font-bold text-brand-600 tracking-widest">
-                               {view === 'DASHBOARD' ? 'HUGO' : selectedCategory?.name}
-                           </h2>
-                        </div>
-
-                        {isAdmin ? (
-                            <div className="flex gap-2">
-                                <button onClick={()=>{setEditingCase(null); setShowUpload(true);}} className="p-2 text-gold-500 hover:text-gold-600 transition-colors"><Icons.Plus size={28}/></button>
-                                <button onClick={handleLogout} className="p-2 -mr-2 text-gray-400 hover:text-red-500 transition-colors"><Icons.LogOut size={20}/></button>
-                            </div>
-                        ) : <div className="w-6"/>}
-                    </header>
-
-                    <main className="pt-20 pb-8 px-5 max-w-3xl mx-auto min-h-screen">
-                        {view === 'DASHBOARD' && (
-                            <div className="animate-fade-in">
-                                {isAdmin && <div className="mb-6 bg-gold-100/50 border border-gold-400/30 p-3 rounded-lg text-xs text-gold-600 flex items-center gap-2 font-medium"><Icons.Monitor size={16}/> 관리자 모드 접속중</div>}
-                                <div className="mb-8 text-center">
-                                    <h3 className="text-2xl font-light text-gray-800 mb-1">Consultation</h3>
-                                    <p className="text-xs text-gray-400 uppercase tracking-wider">Select Category</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {CATEGORIES.map((cat) => (
-                                        <button key={cat.id} onClick={() => { setSelectedCategory(cat); setSelectedTag('전체'); setView('LIST'); }} 
-                                            className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center gap-2 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.1)] hover:border-gold-400 hover:-translate-y-1 transition-all duration-300 h-32 justify-center">
-                                            <span className="text-base font-bold text-gray-700">{cat.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'LIST' && (
-                            <div className="animate-fade-in">
-                                <div className="overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide flex gap-2 w-max mb-2">
-                                    {selectedCategory.tags.map(tag => (
-                                        <button key={tag} onClick={() => setSelectedTag(tag)} 
-                                            className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedTag === tag ? 'bg-brand-600 border-brand-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-brand-300'}`}>
-                                            {tag}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {filteredCases.length > 0 ? filteredCases.map(item => (
-                                        <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
-                                            <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                                            <div className="absolute bottom-3 left-3 right-3">
-                                                <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
-                                                <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
+                                {filteredCases.length > 0 ? filteredCases.map(item => (
+                                    <div key={item.id} onClick={() => { setSelectedCase(item); setCaseViewType('front'); setView('DETAIL'); }} className="relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-md aspect-[1/1] cursor-pointer group hover:shadow-xl transition-all">
+                                        <img src={item.images.front?.after || item.images.front?.before} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                        <div className="absolute bottom-3 left-3 right-3">
+                                            <p className="text-[10px] text-gold-400 font-bold mb-0.5">{item.tags && item.tags[0]}</p>
+                                            <p className="text-xs text-white line-clamp-1 font-medium">{item.description}</p>
+                                        </div>
+                                        {isAdmin && (
+                                            <div className="absolute top-2 right-2 flex gap-1">
+                                                <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
+                                                <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
                                             </div>
-                                            {isAdmin && (
-                                                <div className="absolute top-2 right-2 flex gap-1">
-                                                    <button onClick={(e)=>handleEdit(e, item)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-teal-600 hover:text-teal-800 transition-colors shadow-sm"><Icons.Edit2 size={12}/></button>
-                                                    <button onClick={(e)=>handleDelete(e, item.id)} className="bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 hover:text-red-700 transition-colors shadow-sm"><Icons.Trash2 size={12}/></button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )) : (
-                                        <div className="col-span-2 text-center py-20">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.Upload size={32}/></div>
-                                            <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
-                                            <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
-                                                이전 메뉴로 돌아가기
-                                            </button>
-                                            {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'DETAIL' && selectedCase && (
-                            <div className="animate-fade-in flex flex-col h-[calc(100vh-120px)]">
-                                <div className="flex bg-gray-100 p-1.5 rounded-xl mb-6 shrink-0 mx-auto w-full max-w-sm shadow-inner">
-                                    {['front', 'angle45', 'side'].map((v) => (
-                                        <button key={v} onClick={() => setCaseViewType(v)} 
-                                            className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${caseViewType === v ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                                            {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="col-span-2 text-center py-20">
+                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><Icons.Upload size={32}/></div>
+                                        <p className="text-gray-400 text-sm mb-4">등록된 사례가 없습니다.</p>
+                                        <button onClick={() => setView('DASHBOARD')} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full text-xs font-bold transition-colors shadow-sm">
+                                            이전 메뉴로 돌아가기
                                         </button>
-                                    ))}
+                                        {isAdmin && <p className="text-gold-500 text-xs mt-4 font-bold">+ 버튼을 눌러 추가하세요</p>}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'DETAIL' && selectedCase && (
+                        <div className="animate-fade-in flex flex-col h-[calc(100vh-120px)]">
+                            <div className="flex bg-gray-100 p-1.5 rounded-xl mb-6 shrink-0 mx-auto w-full max-w-sm shadow-inner">
+                                {['front', 'angle45', 'side'].map((v) => (
+                                    <button key={v} onClick={() => setCaseViewType(v)} 
+                                        className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${caseViewType === v ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                                        {v === 'front' ? '정면' : v === 'angle45' ? '45도' : '측면'}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center min-h-0">
+                                <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
+                                    <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
                                 </div>
-                                <div className="flex-1 flex flex-col justify-center min-h-0">
-                                    <div className="w-full relative rounded-2xl border-4 border-white overflow-hidden shadow-2xl bg-gray-50">
-                                        <CompareSlider beforeImage={selectedCase.images[caseViewType]?.before} afterImage={selectedCase.images[caseViewType]?.after} />
+                                <div className="mt-8 space-y-3 px-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
+                                        <div className="flex gap-1">{selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
                                     </div>
-                                    <div className="mt-8 space-y-3 px-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full tracking-wide">ID: {selectedCase.patientId}</span>
-                                            <div className="flex gap-1">{selectedCase.tags.map(t => <span key={t} className="text-xs text-gold-600 font-medium">#{t}</span>)}</div>
-                                        </div>
-                                        <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
-                                    </div>
+                                    <h3 className="text-xl font-serif text-gray-800">{selectedCase.description}</h3>
                                 </div>
                             </div>
-                        )}
-                    </main>
-                    
-                    <div className="pb-6 text-center bg-white">
-                        <div className="flex justify-center items-center gap-2 mb-1">
-                            <div className="h-px w-8 bg-gray-200"></div>
-                            <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
-                            <div className="h-px w-8 bg-gray-200"></div>
                         </div>
-                        <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.1</p>
-                        <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
-                        <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
+                    )}
+                </main>
+                
+                <div className="pb-6 text-center bg-white">
+                    <div className="flex justify-center items-center gap-2 mb-1">
+                        <div className="h-px w-8 bg-gray-200"></div>
+                        <span className="text-[10px] text-gray-300 font-serif tracking-wider">HUGO PLASTIC SURGERY</span>
+                        <div className="h-px w-8 bg-gray-200"></div>
                     </div>
-
-                    {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
+                    <p className="text-[11px] text-gray-500 font-medium">휴고성형외과 전후사진 관리 시스템 v 1.1</p>
+                    <p className="text-[10px] text-gray-400">© 2025 Hugo Plastic Surgery</p>
+                    <p className="text-[9px] text-gray-300 mt-1">본 전후사진은 의료 기록 관리 목적으로 사용됩니다.</p>
                 </div>
-            );
-        };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                {showUpload && <CaseModal categories={CATEGORIES} onClose={handleCloseModal} initialData={editingCase} />}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
